@@ -1,0 +1,198 @@
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+            crossorigin="anonymous"
+    />
+    <link rel="stylesheet" type="text/css" href="/css/table-manegement.css "/>
+
+    <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"
+    ></script>
+    <script src="jquery-3.6.0.min.js"></script>
+
+
+    <meta charset="UTF-8">
+    <title>Dishes management</title>
+</head>
+
+<body>
+<div th:replace="fragments/topnav :: navbar"></div>
+<div class="container my-2 text-light">
+    <h1 th:text="#{dish.management.headline}">Dishes management</h1>
+    <!--    <div th:if="${dishPaged.page.getContent().size() != 0}">-->
+    <div class="dropdown mb-3">
+        <a th:text="#{dish.filter.category}"
+        class="btn btn-outline-light dropdown-toggle btn-md myFilterDropdown" role="button"
+           id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+            Filter Category
+        </a>
+        <a th:text="#{dish.add}"
+                th:href="@{/admin/dishes/newDishForm}" class="btn btn-primary">Add Dish</a>
+
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+            <li>
+                <a th:text="#{dish.filter.category.all}"
+                        th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
+                + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=all' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Show all</a></li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
+                + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=burgers' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Burgers</a></li>
+            <li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
+                + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=drinks' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Drinks</a></li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
+                + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=snacks' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Snacks</a></li>
+        </ul>
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <th>
+                <a class=" text-reset text-decoration-none">Id</a>
+            </th>
+            <th>
+                <a th:text="#{dish.name}"
+                        class=" text-reset"
+                   th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField=name&sortDir='
+                   + ${reverseSortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
+                    Name</a>
+            </th>
+            <th>
+                <a th:text="#{dish.category}"
+                        class=" text-reset"
+                   th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField=category&sortDir='
+                   + ${reverseSortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
+                    Category</a>
+            </th>
+            <th>
+                <a th:text="#{dish.description}"
+                        class=" text-reset"
+                   th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField=description&sortDir='
+                   + ${reverseSortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
+                    Description</a>
+            </th>
+            <th>
+                <a th:text="#{dish.price}"
+                        class=" text-reset"
+                   th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField=price&sortDir='
+                   + ${reverseSortDir}+ '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
+                    Price </a>
+            </th>
+            <th th:text="#{table.actions}">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="dish : ${dishPaged.page}">
+            <td th:text="${dish.id}"></td>
+            <td th:text="${dish.name}"></td>
+            <td th:text="${dish.category}"></td>
+            <td th:text="${dish.description}"></td>
+            <td th:text="${dish.price}"></td>
+
+            <td>
+
+                <a th:text="#{dish.update}"
+                        th:href="@{'/admin/dishes/'+ ${dish.id} + '/update-form'}"
+                        class="btn btn-primary">Update</a>
+                <form class="d-inline"
+                      th:method="delete"
+                      th:action="@{'/admin/dishes/' + ${dish.id} + '/page/' + ${currentPage} + '?sortField=' + ${sortField}
+                   + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
+                    <button th:text="#{dish.delete}"
+                            class="btn btn-danger" type="submit">Delete</button>
+                </form>
+
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <div class="row">
+
+        <div class="col">
+            <div class="dropdown">
+                <a th:text="#{page.rows}"
+                   class="btn btn-outline-light dropdown-toggle btn-md myFilterDropdown" role="button"
+                   data-bs-toggle="dropdown" aria-expanded="false">
+                    Rows per page
+                </a>
+
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                    <li>
+                        <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='+ ${sortField} +'&sortDir='
+                            + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=5'}"
+                           class="dropdown-item">5</a></li>
+                    <li>
+                    <li>
+                        <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='+ ${sortField} +'&sortDir='
+                            + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=10'}"
+                           class="dropdown-item">10</a></li>
+                    <li>
+                        <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='+ ${sortField} +'&sortDir='
+                            + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=20'}"
+                           class="dropdown-item">20</a></li>
+                    <li>
+                        <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='+ ${sortField} +'&sortDir='
+                            + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=30'}"
+                           class="dropdown-item">30</a></li>
+                </ul>
+
+            </div>
+        </div>
+
+        <nav aria-label="Page navigation" class="paging col">
+            <ul class="pagination" th:if="${dishPaged.page.totalPages > 1}">
+                <li class="page-item" th:classappend="${!dishPaged.paging.isPrevEnabled()? 'disabled' : ''}">
+                    <a th:text="#{pagination.previous}"
+                       class="page-link"
+                       th:href="@{'/admin/dishes/page/' + ${dishPaged.paging.pageNumber - 1} + '?sortField=' + ${sortField}
+                       + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}  + '&pageSize=' + ${pageSize}}"
+                       tabindex="-1">Previous</a>
+                </li>
+                <th:block th:each="item : ${dishPaged.paging.getItems()}">
+                    <li class="page-item"
+                        th:classappend="${item.index == dishPaged.paging.pageNumber? 'active' : ''}"
+                        th:if="${item.pageItemType.name() == 'PAGE'}">
+                        <a class="page-link"
+                           th:href="@{'/admin/dishes/page/' + ${item.index} + '?sortField=' + ${sortField}
+                           + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}  + '&pageSize=' + ${pageSize}}"
+
+                           th:text="${item.index}"></a>
+                    </li>
+                    <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
+                        <a class="page-link" href="#">...</a>
+                    </li>
+                </th:block>
+                <li class="page-item" th:classappend="${!dishPaged.paging.isNextEnabled()? 'disabled' : ''}">
+                    <a th:text="#{pagination.next}"
+                       class="page-link"
+                       th:href="@{'/admin/dishes/page/' + ${dishPaged.paging.pageNumber + 1}  + '?sortField=' + ${sortField}
+                          + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}  + '&pageSize=' + ${pageSize}}"
+                    >Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+<div th:unless="${dishPaged.page != 0}" class="text-center">
+    <p class="display-2 text-white">The are no dishes. </p>
+    <p class="display-2 text-white">Add some.</p>
+    <a th:href="@{/admin/dishes/newDishForm}" class="btn btn-lg btn-primary">Add Dish</a>
+
+
+</div>
+</body>
+</html>
