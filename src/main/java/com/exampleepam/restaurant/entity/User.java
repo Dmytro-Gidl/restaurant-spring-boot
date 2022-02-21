@@ -23,9 +23,8 @@ public class User extends AbstractBaseEntity{
     private String password;
     private BigDecimal balanceUAH;
 
-    @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    private List<Role> roles;
+    private Role role;
     @OneToMany(
             mappedBy = "user",
             cascade = CascadeType.ALL,
@@ -36,22 +35,22 @@ public class User extends AbstractBaseEntity{
 
 
     public User(long id, String name, String email, String password,
-                BigDecimal balanceUAH, List<Role> roles, List<Order> orders, boolean enabled) {
+                BigDecimal balanceUAH, Role role, List<Order> orders, boolean enabled) {
         super(id);
         this.name = name;
         this.email = email;
         this.password = password;
         this.balanceUAH = balanceUAH;
-        this.roles = roles;
+        this.role = role;
         this.orders = orders;
         this.enabled = enabled;
     }
 
-    public User(String name, String password, String email, List<Role> roles) {
+    public User(String name, String password, String email, Role role) {
         this.name = name;
         this.password = password;
         this.email = email;
-        this.roles = roles;
+        this.role = role;
         this.balanceUAH = BigDecimal.ZERO;
         this.enabled = true;
     }
@@ -63,7 +62,7 @@ public class User extends AbstractBaseEntity{
                 ", username='" + name + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
-                ", roles=" + roles +
+                ", roles=" + role +
                 '}';
     }
 

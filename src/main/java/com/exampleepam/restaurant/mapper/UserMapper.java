@@ -17,12 +17,11 @@ public class UserMapper {
     }
 
 
-
     public User toUser(UserCreationDto userCreationDto) {
         return new User(userCreationDto.getName(),
                 passwordEncoder.encode(userCreationDto.getPassword()),
                 userCreationDto.getEmail(),
-                Arrays.asList(Role.USER));
+                Role.ADMIN);
     }
 
 }

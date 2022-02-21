@@ -17,13 +17,13 @@ public static final String USER_EMAIL = "userEmail@gmail.com";
 public static final String ADMIN_EMAIL = "adminEmail@gmail.com";
     public static User getBasicUser() {
         return new User(1, "user", USER_EMAIL,
-                "pas", BigDecimal.ZERO, List.of(Role.USER), new ArrayList<>(), true);
+                "pas", BigDecimal.ZERO, Role.USER, new ArrayList<>(), true);
 
     }
 // Basic Users
     public static User getAdminUser() {
         return new User(2, "admin", ADMIN_EMAIL,
-                "pas", BigDecimal.ZERO, List.of(Role.ADMIN), new ArrayList<>(), true);
+                "pas", BigDecimal.ZERO, Role.ADMIN, new ArrayList<>(), true);
 
     }
     public static UserCreationDto getUserCreationDto() {

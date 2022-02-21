@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.List;
 
 @EqualsAndHashCode
 @ToString
@@ -23,7 +24,7 @@ public long getUserId() {
 }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return user.getRoles();
+        return List.of(user.getRole());
     }
 
     @Override
