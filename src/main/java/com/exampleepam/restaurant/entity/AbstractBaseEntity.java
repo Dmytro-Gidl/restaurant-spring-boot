@@ -8,6 +8,10 @@ import lombok.Setter;
 import javax.persistence.*;
 import java.util.Objects;
 
+/**
+ * Basic class for every model entity.
+ * Equals and Hashcode compare ids.
+ */
 @MappedSuperclass
 @Getter
 @Setter

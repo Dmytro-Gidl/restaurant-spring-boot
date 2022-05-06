@@ -1,12 +1,10 @@
 package com.exampleepam.restaurant.controller.admin;
 
 import com.exampleepam.restaurant.dto.OrderResponseDto;
-import com.exampleepam.restaurant.entity.Status;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.exception.UnauthorizedActionException;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.OrderService;
-import com.exampleepam.restaurant.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,17 +15,18 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.persistence.EntityNotFoundException;
 
+/**
+ * Order Controller for Admins
+ */
 @Slf4j
 @Controller
 @RequestMapping("/admin/orders")
 public class AdminOrderController {
     private OrderService orderService;
-    private UserService userService;
 
     @Autowired
-    public AdminOrderController(OrderService orderService, UserService userService) {
+    public AdminOrderController(OrderService orderService ) {
         this.orderService = orderService;
-        this.userService = userService;
     }
 
     private static final String STATUS_ACTION_DECLINE = "decline";
@@ -45,7 +44,7 @@ public class AdminOrderController {
     @DeleteMapping("/{id}")
     public String deleteOrder(@PathVariable(value = "id") long id) {
         try {
-            orderService.deleteOrderById(id);
+            orderService.delete(id);
             log.debug(String.format("Order with id %d was deleted", id));
         } catch (EntityNotFoundException e) {
             log.debug("Admin tried to delete order with id %d, but failed. Order was not found in DB", e);
@@ -75,10 +74,6 @@ public class AdminOrderController {
         model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
 
         model.addAttribute("orderList", pagedOrder);
-
-
-        long userId = authenticatedUser.getUserId();
-        model.addAttribute("userBalance", userService.getUserBalance(userId));
 
         return "order-management";
     }
@@ -111,18 +106,18 @@ public class AdminOrderController {
             } catch (EntityNotFoundException e) {
                 log.warn(String.format("Admin tried to change status, but order with id %d was not found in DB", orderId));
             }
-    }
+        }
 
-    String redirectLink = UriComponentsBuilder.fromPath("/admin/orders/page/{pageNo}")
-            .queryParam("sortField", sortField)
-            .queryParam("sortDir", sortDir)
-            .queryParam("status", statusParam)
-            .queryParam("pageSize", pageSize)
-            .buildAndExpand(pageNo)
-            .toUriString();
+        String redirectLink = UriComponentsBuilder.fromPath("/admin/orders/page/{pageNo}")
+                .queryParam("sortField", sortField)
+                .queryParam("sortDir", sortDir)
+                .queryParam("status", statusParam)
+                .queryParam("pageSize", pageSize)
+                .buildAndExpand(pageNo)
+                .toUriString();
         return"redirect:"+redirectLink;
 
-}
+    }
 }
 
 

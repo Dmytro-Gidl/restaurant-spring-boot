@@ -31,11 +31,4 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o WHERE o.status = :status AND o.id = :id")
     Page<Order> findOrdersByStatusAndUserId(@Param(value = "status") Status status,
                                             @Param(value = "id") long id, Pageable pageable);
-
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM Order o WHERE o.id=?1")
-    Integer deleteOrderById(long id);
-
-
 }

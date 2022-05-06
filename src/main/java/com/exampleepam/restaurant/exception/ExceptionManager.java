@@ -3,6 +3,9 @@ package com.exampleepam.restaurant.exception;
 import javax.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 
+/**
+ * Helper class for getting exceptions
+ */
 public class ExceptionManager {
 
     private ExceptionManager() {

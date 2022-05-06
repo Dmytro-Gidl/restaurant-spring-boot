@@ -5,6 +5,7 @@ import com.exampleepam.restaurant.exception.UserAlreadyExistAuthenticationExcept
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,12 +15,16 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.math.BigDecimal;
 
+/**
+ * User Controller
+ */
 @Slf4j
 @Controller
 public class UserController {
 
-    UserService userService;
+    private final UserService userService;
 
+    @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }

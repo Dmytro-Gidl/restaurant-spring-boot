@@ -1,5 +1,8 @@
 package com.exampleepam.restaurant.exception;
 
+/**
+ * Exception to be thrown when a user already exists in DB
+ */
 public class UserAlreadyExistAuthenticationException extends Exception {
 
     public UserAlreadyExistAuthenticationException() {

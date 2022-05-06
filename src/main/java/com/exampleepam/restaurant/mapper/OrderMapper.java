@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Mapper class for Order and OrderDTOs
+ */
 @Component
 public class OrderMapper {
 
@@ -32,14 +35,14 @@ public class OrderMapper {
 
     private List<OrderItem> getOrderItems(Map<Dish, Integer> dishQuantityMap) {
         return dishQuantityMap.entrySet().stream()
-                .map(entry -> new OrderItem(entry.getKey(), entry.getValue()))
+                .map(entry -> new OrderItem(entry.getKey().getName(), entry.getValue()))
                 .collect(Collectors.toList());
     }
 
     public OrderResponseDto toOrderResponseDto(Order order) {
         List<OrderedItemResponseDto> orderedItemResponseDtos = order.getOrderItems().stream()
                 .map(orderItem ->
-                        new OrderedItemResponseDto(orderItem.getDish().getName(), orderItem.getQuantity()))
+                        new OrderedItemResponseDto(orderItem.getDishName(), orderItem.getQuantity()))
                 .collect(Collectors.toList());
         return new OrderResponseDto(order.getId(), order.getStatus(), order.getAddress(),
                 order.getCreationDateTime(), order.getUpdateDateTime(),

@@ -1,5 +1,8 @@
 package com.exampleepam.restaurant.exception;
 
+/**
+ * Exception to be thrown when a user does not have enough money to perform an action
+ */
 public class InsufficientFundsException extends RuntimeException {
     public InsufficientFundsException() {
     }

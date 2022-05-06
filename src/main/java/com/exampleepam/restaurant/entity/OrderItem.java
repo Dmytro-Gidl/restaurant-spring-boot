@@ -7,6 +7,9 @@ import org.hibernate.annotations.OnDeleteAction;
 import javax.persistence.*;
 import java.util.Objects;
 
+/**
+ * Describes OrderItem entity
+ */
 @Entity
 @Getter
 @Setter
@@ -14,26 +17,16 @@ import java.util.Objects;
 @AllArgsConstructor
 public class OrderItem extends AbstractBaseEntity{
 
-    private long id;
-        private Integer quantity;
+    private String dishName;
+    private Integer quantity;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "dish_id")
-    private Dish dish;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
 
-
-
-    public OrderItem(Dish dish, int quantity) {
-        this.dish = dish;
+    public OrderItem(String dishName, Integer quantity) {
+        this.dishName = dishName;
         this.quantity = quantity;
     }
-
-
-
-
-
 }

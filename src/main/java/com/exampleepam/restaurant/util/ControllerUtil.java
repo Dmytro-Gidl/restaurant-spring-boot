@@ -5,7 +5,10 @@ import com.exampleepam.restaurant.dto.OrderCreationDto;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ControllerUtil {
+/**
+ * Util class for Controller
+ */
+public final class ControllerUtil {
     private ControllerUtil() {
     }
 

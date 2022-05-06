@@ -14,6 +14,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
 
+/**
+ * Web Mvc Configuration
+ */
 @Configuration
 public class MvcConfig implements WebMvcConfigurer {
     @Override

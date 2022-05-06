@@ -1,12 +1,17 @@
 package com.exampleepam.restaurant.entity;
 
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Describes Dish entity
+ */
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,16 +22,10 @@ public class Dish extends AbstractBaseEntity{
 
     private String name;
     private String description;
+    @Enumerated(EnumType.STRING)
     private Category category;
     BigDecimal price;
     private String imageFileName;
-
-
-    @OneToMany(cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY,
-            mappedBy = "dish")
-    @ToString.Exclude
-    private List<OrderItem> orderItems;
 
     public Dish(long id, String name, String description, Category category, BigDecimal price, String imagePath) {
         this.id = id;

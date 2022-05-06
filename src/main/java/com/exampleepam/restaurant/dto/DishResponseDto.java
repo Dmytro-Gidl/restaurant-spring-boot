@@ -4,6 +4,9 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+/**
+ * Response DTO for Dish
+ */
 @Getter
 @Setter
 @AllArgsConstructor

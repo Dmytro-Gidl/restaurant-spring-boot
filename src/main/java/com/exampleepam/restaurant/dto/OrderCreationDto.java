@@ -7,6 +7,9 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
 
+/**
+ * Creation DTO for Order
+ */
 @Getter
 @Setter
 @AllArgsConstructor

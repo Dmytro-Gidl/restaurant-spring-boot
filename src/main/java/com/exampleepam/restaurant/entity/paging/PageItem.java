@@ -2,6 +2,9 @@ package com.exampleepam.restaurant.entity.paging;
 
 import lombok.*;
 
+/**
+ * PageItems describes a Page for Pagination.
+ */
 @Setter
 @Getter
 @Builder

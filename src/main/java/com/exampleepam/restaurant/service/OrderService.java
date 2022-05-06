@@ -15,6 +15,7 @@ import com.exampleepam.restaurant.repository.DishRepository;
 import com.exampleepam.restaurant.repository.OrderRepository;
 import com.exampleepam.restaurant.repository.UserRepository;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
+import com.exampleepam.restaurant.util.ServiceUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,9 @@ import java.util.stream.Collectors;
 
 import static com.exampleepam.restaurant.exception.ExceptionManager.*;
 
+/**
+ * Service for the Order entity
+ */
 @Service
 public class OrderService {
     OrderRepository orderRepository;
@@ -39,6 +43,7 @@ public class OrderService {
     UserRepository userRepository;
     DishRepository dishRepository;
     UserService userService;
+    ServiceUtil serviceUtil;
 
 
     private static final String STATUS_ALL = "all";
@@ -47,81 +52,100 @@ public class OrderService {
             Status.COOKING, Status.DELIVERING);
 
     public OrderService(OrderRepository orderRepository, OrderMapper orderMapper,
-                        UserRepository userRepository, DishRepository dishRepository, UserService userService) {
+                        UserRepository userRepository, DishRepository dishRepository,
+                        UserService userService, ServiceUtil serviceUtil) {
+
         this.orderRepository = orderRepository;
         this.orderMapper = orderMapper;
         this.userRepository = userRepository;
         this.dishRepository = dishRepository;
         this.userService = userService;
+        this.serviceUtil = serviceUtil;
     }
 
-    public List<Order> getOrders() {
-        return orderRepository.findAll();
+    /**
+     * Deletes an Order by id
+     *
+     * @param id the order's id
+     */
+    public void delete(long id) {
+        orderRepository.deleteById(id);
     }
 
-    public void deleteOrderById(long id) {
-        int delete = orderRepository.deleteOrderById(id);
-        if (delete == 0) throw getNotFoundException(EntityType.ORDER, id);
-    }
-
-
-    public Paged<OrderResponseDto> findPaginated(int pageNo, int pageSize, String sortField,
+    /**
+     * Returns a Paged object with a list of sorted dishes filtered by category
+     *
+     * @param currentPage current page
+     * @param pageSize    number of rows per page
+     * @param sortField   sort column for rows
+     * @param sortDir     sort direction for rows
+     * @param status      filter status, if status equals 'all' - it is ignored,
+     *                    if 'active' - returns Orders with status in the Active status list,
+     *                    else - filtered by the given status
+     * @return a Paged object with a sorted and filtered by status list of OrderResponseDTOs
+     */
+    public Paged<OrderResponseDto> findPaginated(int currentPage, int pageSize, String sortField,
                                                  String sortDir, String status) {
-        Sort sort = getSort(sortField, sortDir);
+        Sort sort = serviceUtil.getSort(sortField, sortDir);
 
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+        Pageable pageable = PageRequest.of(currentPage - 1, pageSize, sort);
 
         if (status.equals(STATUS_ALL)) {
             Page<Order> orderPage = orderRepository.findAll(pageable);
             Page<OrderResponseDto> orderResponseDtoPage = toDtoPage(orderPage);
-            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), pageNo, pageSize));
+            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), currentPage, pageSize));
 
         } else if (status.equals(STATUS_ACTIVE)) {
             Page<Order> orderPage = orderRepository.findOrdersWhereStatusOneOf(
                     ACTIVE_STATUS_LIST, pageable);
             Page<OrderResponseDto> orderResponseDtoPage = toDtoPage(orderPage);
-            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), pageNo, pageSize));
+            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), currentPage, pageSize));
 
         } else {
             Page<Order> orderPage = orderRepository
                     .findOrdersByStatus(Status.valueOf(status.toUpperCase(Locale.ENGLISH)), pageable);
             Page<OrderResponseDto> orderResponseDtoPage = toDtoPage(orderPage);
-            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), pageNo, pageSize));
+            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), currentPage, pageSize));
         }
     }
 
-    private Sort getSort(String sortField, String sortDir) {
-        Sort primarySort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ?
-                Sort.by(sortField).ascending() : Sort.by(sortField).descending();
-        Sort secondarySort = Sort.by("id").ascending();
-
-        return primarySort.and(secondarySort);
-    }
-
-    public Paged<OrderResponseDto> findPaginatedByUser(int pageNo, int pageSize,
+    /**
+     * Returns a Paged object with a list of sorted dishes filtered by category and user
+     *
+     * @param currentPage       current page
+     * @param pageSize          number of rows per page
+     * @param sortField         sort column for rows
+     * @param sortDir           sort direction for rows
+     * @param status            filter status, if status equals 'all' - it is ignored,
+     *                          if 'active' - returns Orders with status in the Active status list,
+     *                          else - filtered by the given status
+     * @param authenticatedUser filter orders by the given user
+     * @return a Paged object with a sorted and filtered by status list of OrderResponseDTOs
+     */
+    public Paged<OrderResponseDto> findPaginatedByUser(int currentPage, int pageSize,
                                                        String sortField, String sortDir,
                                                        String status, AuthenticatedUser authenticatedUser) {
-        Sort sort = getSort(sortField, sortDir);
+        Sort sort = serviceUtil.getSort(sortField, sortDir);
 
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+        Pageable pageable = PageRequest.of(currentPage - 1, pageSize, sort);
         long userId = userRepository.findByEmail(authenticatedUser.getUsername()).getId();
 
         if (status.equals(STATUS_ALL)) {
             Page<Order> orderPage = orderRepository.findAllOrdersByUserId(userId, pageable);
             Page<OrderResponseDto> orderResponseDtoPage = toDtoPage(orderPage);
-            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), pageNo, pageSize));
+            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), currentPage, pageSize));
 
         } else if (status.equals(STATUS_ACTIVE)) {
             Page<Order> orderPage = orderRepository.findOrdersByUserIdWhereStatusOneOf(
                     userId, ACTIVE_STATUS_LIST, pageable);
             Page<OrderResponseDto> orderResponseDtoPage = toDtoPage(orderPage);
-            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), pageNo, pageSize));
+            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), currentPage, pageSize));
 
         } else {
             Page<Order> orderPage = orderRepository
                     .findOrdersByStatusAndUserId(Status.valueOf(status.toUpperCase(Locale.ENGLISH)), userId, pageable);
             Page<OrderResponseDto> orderResponseDtoPage = toDtoPage(orderPage);
-            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), pageNo, pageSize));
+            return new Paged<>(orderResponseDtoPage, Paging.of(orderPage.getTotalPages(), currentPage, pageSize));
         }
 
     }
@@ -132,6 +156,12 @@ public class OrderService {
                 .map(order -> orderMapper.toOrderResponseDto(order));
     }
 
+    /**
+     * Saves an Order
+     *
+     * @param orderCreationDto  OrderCreationDTO to be mapped to order and saved
+     * @param authenticatedUser User to whom the order should be linked
+     */
     @Transactional
     public void saveOrder(OrderCreationDto orderCreationDto,
                           AuthenticatedUser authenticatedUser) {
@@ -168,21 +198,34 @@ public class OrderService {
                 Map.Entry::getValue));
     }
 
+    /**
+     * Change the order's status to 'DECLINED' and refund order's total cost the user
+     *
+     * @param id  Order's id
+     * @throws javax.persistence.EntityNotFoundException if order does not exist
+     */
     @Transactional
-    public void setStatusDeclinedAndRefund(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> getNotFoundException(EntityType.ORDER, orderId));
+    public void setStatusDeclinedAndRefund(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> getNotFoundException(EntityType.ORDER, id));
         order.setStatus(Status.DECLINED);
 
         BigDecimal orderCost = order.getTotalPrice();
-        long userId = userRepository.getUserIdByOrderId(orderId);
+        long userId = userRepository.getUserIdByOrderId(id);
         userService.addUserBalance(userId, orderCost);
     }
-
+    /**
+     * Change the order's status to next by enum ordinal
+     *
+     * @param id  Order's id
+     * @throws javax.persistence.EntityNotFoundException if order does not exist
+     * @throws com.exampleepam.restaurant.exception.UnauthorizedActionException if it is an attempt to change
+     * status of a 'DECLINED' or 'COMPLETED' order
+     */
     @Transactional
-    public void setNextStatus(long orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() ->
-                getNotFoundException(EntityType.ORDER, orderId));
+    public void setNextStatus(long id) {
+        Order order = orderRepository.findById(id).orElseThrow(() ->
+                getNotFoundException(EntityType.ORDER, id));
         Status status = order.getStatus();
         if (status.equals(Status.DECLINED) || status.equals(Status.COMPLETED)) {
             throw getUnauthorizedActionException("Completed and Declined statuses cannot be changed");

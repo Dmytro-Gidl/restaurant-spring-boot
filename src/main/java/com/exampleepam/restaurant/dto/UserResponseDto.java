@@ -2,6 +2,9 @@ package com.exampleepam.restaurant.dto;
 
 import lombok.*;
 
+/**
+ * Response DTO for User
+ */
 @Getter
 @Setter
 @AllArgsConstructor

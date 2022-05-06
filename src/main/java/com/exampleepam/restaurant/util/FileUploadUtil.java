@@ -14,9 +14,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-public class FileUploadUtil {
+/**
+ * Util class for Uploading data
+ */
+public final class FileUploadUtil {
     private static final int MENU_IMAGE_HEIGHT = 400;
     private static final int MENU_IMAGE_WIDTH = 400;
+
+    private FileUploadUtil() {
+    }
 
     public static void saveFile(String uploadDir, String fileName,
                                 MultipartFile multipartFile) throws IOException {

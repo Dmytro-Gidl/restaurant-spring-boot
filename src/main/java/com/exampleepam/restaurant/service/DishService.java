@@ -6,11 +6,11 @@ import com.exampleepam.restaurant.entity.Category;
 import com.exampleepam.restaurant.entity.Dish;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.entity.paging.Paging;
-import com.exampleepam.restaurant.exception.EntityType;
 import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
 import com.exampleepam.restaurant.util.FileUploadUtil;
 import com.exampleepam.restaurant.util.FolderDeleteUtil;
+import com.exampleepam.restaurant.util.ServiceUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,29 +22,41 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
-import static com.exampleepam.restaurant.exception.ExceptionManager.getNotFoundException;
-
+/**
+ * Service for the Dish entity
+ */
 @Service
 public class DishService {
     DishRepository dishRepository;
     DishMapper dishMapper;
+    ServiceUtil serviceUtil;
     private static final String CATEGORY_ALL = "all";
 
     @Autowired
-    public DishService(DishRepository dishRepository, DishMapper dishMapper) {
+    public DishService(DishRepository dishRepository, DishMapper dishMapper, ServiceUtil serviceUtil) {
         this.dishRepository = dishRepository;
         this.dishMapper = dishMapper;
+        this.serviceUtil = serviceUtil;
     }
 
-    public Paged<DishResponseDto> findPaginated(int pageNo, int pageSize, String sortField,
-                                                String sortDirection, String category) {
+    /**
+     * Returns a Paged object with a list of sorted dishes filtered by category
+     *
+     * @param currentPage current page
+     * @param pageSize    number of rows per page
+     * @param sortField   sort column for rows
+     * @param sortDir     sort direction for rows
+     * @param category    filter category
+     * @return a Paged object with a sorted and filtered by category list of DishResponseDTOs
+     * or an empty list if nothing is found
+     */
+    public Paged<DishResponseDto> findPaginated(int currentPage, int pageSize, String sortField,
+                                                String sortDir, String category) {
 
-        Sort primarySort = sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name()) ?
-                Sort.by(sortField).ascending() : Sort.by(sortField).descending();
-        Sort secondarySort = Sort.by("id").ascending();
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, primarySort.and(secondarySort));
+
+        Sort sort = serviceUtil.getSort(sortField, sortDir);
+        Pageable pageable = PageRequest.of(currentPage - 1, pageSize, sort);
 
         Page<Dish> dishPage;
 
@@ -57,12 +69,34 @@ public class DishService {
 
         Page<DishResponseDto> dishResponseDtoPage = dishPage
                 .map(dish -> dishMapper.toDishResponseDto(dish));
-        return new Paged<>(dishResponseDtoPage, Paging.of(dishPage.getTotalPages(), pageNo, pageSize));
+
+        return new Paged<>(dishResponseDtoPage, Paging.of(dishPage.getTotalPages(), currentPage, pageSize));
 
     }
 
-    public void saveImage(MultipartFile multipartFile, long persistedDishId, String fileName) {
 
+    /**
+     * Saves a Dish
+     *
+     * @param dishCreationDto dish to be saved
+     * @return persisted id
+     */
+    public long save(DishCreationDto dishCreationDto) {
+        Dish dish = dishMapper.toDish(dishCreationDto);
+        return dishRepository.save(dish).getId();
+    }
+
+    /**
+     * Saves a Dish with an image
+     *
+     * @param dishCreationDto dish to be saved
+     * @param multipartFile   image to be saved
+     * @return persisted dish id
+     */
+    public long saveWithFile(DishCreationDto dishCreationDto, MultipartFile multipartFile) {
+        Dish dish = dishMapper.toDish(dishCreationDto);
+        String fileName = dish.getImageFileName();
+        long persistedDishId = dishRepository.save(dish).getId();
         String uploadDir = "dish-images/" + persistedDishId;
         try {
             FolderDeleteUtil.deleteDishFolder(persistedDishId);
@@ -70,51 +104,57 @@ public class DishService {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return persistedDishId;
+
     }
 
-
-    public long saveDish(DishCreationDto dishCreationDto) {
-        Dish dish = dishMapper.toDish(dishCreationDto);
-        return dishRepository.save(dish).getId();
-    }
-
+    /**
+     * Returns a DishResponseDto fetched by id
+     *
+     * @param id Dish id
+     * @return persisted id
+     */
     public DishResponseDto getDishById(long id) {
-        Dish dish = dishRepository.findById(id).orElseThrow(() ->
-                getNotFoundException(EntityType.DISH, id));
+        Dish dish = dishRepository.getById(id);
         return dishMapper.toDishResponseDto(dish);
     }
 
+    /**
+     * Returns a sorted list of DishResponseDTOs filtered by category
+     *
+     * @param sortField sort column for rows
+     * @param sortDir   sort direction for rows
+     * @param category  filter category
+     * @return a list of DishResponseDTOs
+     */
     public List<DishResponseDto> findDishesByCategorySorted(String sortField,
-                                                            String sortDirection, String category) {
-        Sort sort = getSort(sortDirection, sortField);
+                                                            String sortDir, String category) {
+        Sort sort = serviceUtil.getSort(sortDir, sortField);
         List<Dish> dishes = dishRepository.findDishesByCategory(
                 Category.valueOf(category.toUpperCase(Locale.ENGLISH)), sort);
-        return toDishResponseDtoList(dishes);
+        return dishMapper.toDishResponseDtoList(dishes);
     }
 
-    public List<DishResponseDto> findAllDishesSorted(String sortField, String sortDirection) {
-        Sort sort = getSort(sortDirection, sortField);
+    /**
+     * Returns a sorted list of DishResponseDTOs
+     *
+     * @param sortField sort column for rows
+     * @param sortDir   sort direction for rows
+     * @return a list of DishResponseDTOs
+     */
+    public List<DishResponseDto> findAllDishesSorted(String sortField, String sortDir) {
+        Sort sort = serviceUtil.getSort(sortField, sortDir);
         List<Dish> dishes = dishRepository.findAll(sort);
-        return toDishResponseDtoList(dishes);
+        return dishMapper.toDishResponseDtoList(dishes);
     }
 
-    private List<DishResponseDto> toDishResponseDtoList(List<Dish> dishes) {
-        return dishes.stream()
-                .map(dish -> dishMapper.toDishResponseDto(dish))
-                .collect(Collectors.toList());
-    }
-
-
-    public Sort getSort(String sortDirection, String sortField) {
-        return sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())
-                ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
-    }
-
+    /**
+     * Deletes a Dish by id
+     *
+     * @param id id of the Dish to be deleted
+     */
     public void deleteDishById(long id) {
-        int delete = dishRepository.deleteDishById(id);
-        if (delete == 0) {
-            throw getNotFoundException(EntityType.DISH, id);
-        }
+        dishRepository.deleteById(id);
         FolderDeleteUtil.deleteDishFolder(id);
     }
 }

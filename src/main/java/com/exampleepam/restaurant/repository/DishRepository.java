@@ -16,9 +16,4 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     List<Dish> findDishesByCategory(Category category, Sort sort);
 
     Page<Dish> findPagedByCategory(Category category, Pageable pageable);
-
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM Dish d WHERE d.id=?1")
-    Integer deleteDishById(long id);
 }

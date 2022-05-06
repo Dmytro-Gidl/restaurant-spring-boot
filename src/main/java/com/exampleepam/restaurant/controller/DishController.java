@@ -15,18 +15,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Dish Controller for Users
+ */
 @Controller
 public class DishController {
     private final DishService dishService;
-    private final UserService userService;
+
     private static final String DEFAULT_SORT_FIELD = "name";
     private static final String DEFAULT_SORT_DIR = "asc";
     private static final String DEFAULT_CATEGRY = "all";
 
     @Autowired
-    public DishController(DishService dishService, UserService userService) {
+    public DishController(DishService dishService ) {
         this.dishService = dishService;
-        this.userService = userService;
     }
 
     @GetMapping("/menu")
@@ -37,7 +39,6 @@ public class DishController {
                     required = false, defaultValue = DEFAULT_SORT_DIR) String sortDir,
             @RequestParam(value = "filterCategory",
                     required = false, defaultValue = DEFAULT_CATEGRY) String filterCategory,
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             Model model) {
 
 
@@ -55,9 +56,6 @@ public class DishController {
         model.addAttribute("sortField", sortField);
         model.addAttribute("sortDir", sortDir);
         model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
-
-        long userId = authenticatedUser.getUserId();
-        model.addAttribute("userBalance", userService.getUserBalance(userId));
         return "menu";
     }
 

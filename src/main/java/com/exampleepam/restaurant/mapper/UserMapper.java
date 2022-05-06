@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 
+/**
+ * Mapper class for User and UserDTOs
+ */
 @Component
 public class UserMapper {
     private PasswordEncoder passwordEncoder;

@@ -1,5 +1,8 @@
 package com.exampleepam.restaurant.exception;
 
+/**
+ * Exception to be thrown when an unauthorized action is performed
+ */
 public class UnauthorizedActionException extends RuntimeException {
     public UnauthorizedActionException() {
     }

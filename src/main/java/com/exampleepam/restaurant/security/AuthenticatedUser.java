@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Custom UserDetails class
+ */
 @EqualsAndHashCode
 @ToString
 public class AuthenticatedUser implements UserDetails {
@@ -19,9 +22,9 @@ public class AuthenticatedUser implements UserDetails {
     public AuthenticatedUser(User user) {
         this.user = user;
     }
-public long getUserId() {
+    public long getUserId() {
         return user.getId();
-}
+    }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(user.getRole());

@@ -5,7 +5,6 @@ import com.exampleepam.restaurant.dto.DishResponseDto;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.DishService;
-import com.exampleepam.restaurant.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,17 +19,18 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.persistence.EntityNotFoundException;
 import javax.validation.Valid;
 
+/**
+ * Dish Controller for Admins
+ */
 @Controller
 @Slf4j
 @RequestMapping("/admin/dishes")
 public class AdminDishController {
     private final DishService dishService;
-    private final UserService userService;
 
     @Autowired
-    public AdminDishController(DishService dishService, UserService userService) {
+    public AdminDishController(DishService dishService) {
         this.dishService = dishService;
-        this.userService = userService;
     }
 
 
@@ -62,10 +62,6 @@ public class AdminDishController {
 
         model.addAttribute("dishPaged", pagedOrder);
 
-
-        long userId = authenticatedUser.getUserId();
-        model.addAttribute("userBalance", userService.getUserBalance(userId));
-
         return "dishes-management";
     }
 
@@ -85,21 +81,19 @@ public class AdminDishController {
             model.addAttribute("dish", dishCreationDto);
             return "dish-add";
         }
-        if (!multipartFile.isEmpty()) {
-            saveDishWithFile(dishCreationDto, multipartFile);
+
+        String originalFilename = multipartFile.getOriginalFilename();
+        if (!multipartFile.isEmpty() && originalFilename != null && !originalFilename.isBlank()) {
+            String fileName = StringUtils.cleanPath(originalFilename);
+            dishCreationDto.setImageFileName(fileName);
+            dishService.saveWithFile(dishCreationDto, multipartFile);
         } else {
-            dishService.saveDish(dishCreationDto);
+            dishService.save(dishCreationDto);
         }
 
         return "redirect:/admin/dishes";
     }
 
-    private void saveDishWithFile(DishCreationDto dishCreationDto, MultipartFile multipartFile) {
-        String fileName = StringUtils.cleanPath(multipartFile.getOriginalFilename());
-        dishCreationDto.setImageFileName(fileName);
-        long persistedDishId = dishService.saveDish(dishCreationDto);
-        dishService.saveImage(multipartFile, persistedDishId, fileName);
-    }
 
     @DeleteMapping("/{id}/page/{page}")
     public String deleteDish(
@@ -110,11 +104,8 @@ public class AdminDishController {
             @RequestParam("pageSize") int pageSize,
             @RequestParam("filterCategory") String filterCategory
     ) {
-        try {
-            dishService.deleteDishById(id);
-        } catch (EntityNotFoundException e) {
-            log.warn(String.format("Admin tried to delete dish with id %d. But the Dish was not found in DB", id), e);
-        }
+        dishService.deleteDishById(id);
+
 
         String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
                 .queryParam("sortField", sortField)
@@ -141,19 +132,23 @@ public class AdminDishController {
             return "dish-update";
         }
 
-
-        if (!multipartFile.isEmpty()) {
-            saveDishWithFile(dishCreationDto, multipartFile);
+        String originalFilename = multipartFile.getOriginalFilename();
+        if (!multipartFile.isEmpty() && originalFilename != null && !originalFilename.isBlank()) {
+            String fileName = StringUtils.cleanPath(originalFilename);
+            dishCreationDto.setImageFileName(fileName);
+            dishService.saveWithFile(dishCreationDto, multipartFile);
         } else {
-            try {
-                var oldDish = dishService.getDishById(dishId);
+            var oldDish = dishService.getDishById(dishId);
 
+            if (oldDish != null) {
                 dishCreationDto.setImageFileName(oldDish.getImageFileName());
-                dishService.saveDish(dishCreationDto);
-            } catch (EntityNotFoundException e) {
-                log.warn(String.format("Admin tried to update dish with ud %d. But the dish was not found in DB",
-                        dishId), e);
+                dishService.save(dishCreationDto);
+            } else {
+                log.debug(String.format("Admin tried to update a dish with id %d. But the dish was not found in DB",
+                        dishId));
             }
+
+
         }
 
         return "redirect:/admin/dishes";
@@ -164,12 +159,15 @@ public class AdminDishController {
     public String returnDishUpdateForm(
             @PathVariable(value = "id") long id,
             Model model) {
-        try {
-                DishResponseDto dishResponseDto = dishService.getDishById(id);
+        DishResponseDto dishResponseDto = dishService.getDishById(id);
+
+        if(dishResponseDto != null) {
             model.addAttribute("dish", dishResponseDto);
-        } catch (EntityNotFoundException e) {
-            log.warn(String.format("Admin tried to update dish with ud %d. But the dish was not found in DB", id), e);
+        } else {
+            log.debug(String.format("Admin tried to update a dish with id %d. But the dish was not found in DB", id));
+            return "redirect:/admin/orders";
         }
+
 
         return "dish-update";
     }

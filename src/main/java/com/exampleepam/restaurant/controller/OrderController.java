@@ -24,13 +24,15 @@ import java.util.stream.Collectors;
 
 import static com.exampleepam.restaurant.util.ControllerUtil.filterItemsWithoutOrders;
 
+/**
+ * Order Controller for Users
+ */
 @Slf4j
 @NoArgsConstructor
 @Controller
 @RequestMapping("/orders")
 public class OrderController {
-    private  OrderService orderService;
-    private  UserService userService;
+    private OrderService orderService;
     private  DishService dishService;
 
     private static final String DEFAULT_SORT_FIELD = "category";
@@ -39,14 +41,13 @@ public class OrderController {
     private static final String DEFAULT_PAGE_SIZE = "1";
 
     @Autowired
-    public OrderController(OrderService orderService, UserService userService, DishService dishService) {
+    public OrderController(OrderService orderService , DishService dishService) {
         this.orderService = orderService;
-        this.userService = userService;
         this.dishService = dishService;
     }
 
 
-    private void fillMenuModelWithData(Model model, AuthenticatedUser authenticatedUser) {
+    private void    fillMenuModelWithData(Model model) {
         model.addAttribute("sortField", DEFAULT_SORT_FIELD);
         model.addAttribute("sortDir", DEFAULT_SORT_DIR);
         model.addAttribute("filterCategory", DEFAULT_CATEGRY);
@@ -54,8 +55,6 @@ public class OrderController {
         model.addAttribute("filterCategory", DEFAULT_CATEGRY);
         model.addAttribute("dishList", dishService.findAllDishesSorted(
                 DEFAULT_SORT_FIELD, DEFAULT_SORT_DIR));
-        long userId = authenticatedUser.getUserId();
-        model.addAttribute("userBalance", userService.getUserBalance(userId));
     }
 
     @PostMapping
@@ -65,7 +64,7 @@ public class OrderController {
                             Model model) {
 
         if (bindingResult.hasErrors()) {
-            fillMenuModelWithData(model, authenticatedUser);
+            fillMenuModelWithData(model);
             return "menu";
         }
 
@@ -77,17 +76,17 @@ public class OrderController {
             orderService.saveOrder(order, authenticatedUser);
         } catch (InsufficientFundsException e) {
 
-            log.debug(String.format("User with email %s wanted to order, but balance was too low.",
+            log.debug(String.format("User with email %s tried to order, but balance was too low.",
                     authenticatedUser.getUsername()), e);
 
-            fillMenuModelWithData(model, authenticatedUser);
+            fillMenuModelWithData(model);
             bindingResult.reject("insufficient.funds.exception");
-
-
             return "menu";
+
         } catch (EntityNotFoundException e) {
-            log.info(String.format("User with email %s wanted to order, but one of items was not found in DB.",
-                    authenticatedUser.getUsername()), e);
+            log.info(String.format("User with email %s tried to order, but one of items was not found in DB.",authenticatedUser.getUsername()), e);
+            bindingResult.reject("dish.absent.exception");
+            return "menu";
         }
 
         return "redirect:/orders/history";
@@ -125,9 +124,6 @@ public class OrderController {
         model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
 
         model.addAttribute("orderList", pagedOrder);
-
-        long userId = authenticatedUser.getUserId();
-        model.addAttribute("userBalance", userService.getUserBalance(userId));
         return "order-history";
     }
 

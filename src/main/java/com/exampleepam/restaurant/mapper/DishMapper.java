@@ -7,6 +7,12 @@ import com.exampleepam.restaurant.entity.Category;
 import com.exampleepam.restaurant.entity.Dish;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Mapper class for Dish and DishDTOs
+ */
 @Component
 public class DishMapper {
 
@@ -19,6 +25,11 @@ public class DishMapper {
                 dishCreationDto.getDescription(),
                 Category.valueOf(dishCreationDto.getCategory().name()),
                 dishCreationDto.getPrice(), dishCreationDto.getImageFileName());
+    }
+    public List<DishResponseDto> toDishResponseDtoList(List<Dish> dishes) {
+        return dishes.stream()
+                .map(this::toDishResponseDto)
+                .collect(Collectors.toList());
     }
 
 }
