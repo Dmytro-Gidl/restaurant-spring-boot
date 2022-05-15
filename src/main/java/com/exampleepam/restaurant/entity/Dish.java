@@ -20,7 +20,9 @@ import java.util.Objects;
 @ToString
 public class Dish extends AbstractBaseEntity{
 
+    @Column(length = 30)
     private String name;
+    @Column(length = 40)
     private String description;
     @Enumerated(EnumType.STRING)
     private Category category;

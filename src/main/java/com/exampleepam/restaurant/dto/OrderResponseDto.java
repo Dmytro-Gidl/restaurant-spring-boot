@@ -22,6 +22,7 @@ public class OrderResponseDto {
     private LocalDateTime creationDateTime;
     private LocalDateTime updateDateTime;
     private BigDecimal totalPrice;
+    private String clientName;
     private List<OrderedItemResponseDto> orderItems;
 
 

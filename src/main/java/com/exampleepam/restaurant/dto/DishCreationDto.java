@@ -2,10 +2,7 @@ package com.exampleepam.restaurant.dto;
 
 import lombok.*;
 
-import javax.validation.constraints.Digits;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 
 /**
@@ -19,9 +16,11 @@ import java.math.BigDecimal;
 public class DishCreationDto {
     private long id;
     private String imageFileName;
-    @NotBlank(message = "{fail.blank.name}")
+    @NotBlank(message = "{fail.dish.blank.name}")
+    @Size(min = 4, max = 30, message = "{fail.dish.size.name}")
     private String name;
-    @NotBlank(message = "{fail.blank.description}")
+    @NotBlank(message = "{fail.dish.blank.description}")
+    @Size(min = 4, max = 40, message = "{fail.dish.size.description}")
     private String description;
     @NotNull(message = "{fail.null.category}")
     private CategoryDto category;

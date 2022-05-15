@@ -17,6 +17,7 @@ import java.util.Objects;
 @AllArgsConstructor
 public class OrderItem extends AbstractBaseEntity{
 
+    @Column(length = 30)
     private String dishName;
     private Integer quantity;
 

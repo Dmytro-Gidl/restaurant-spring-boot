@@ -4,7 +4,7 @@ import com.exampleepam.restaurant.validator.HasOrder;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.Map;
 
 /**
@@ -17,6 +17,7 @@ import java.util.Map;
 @ToString
 public class OrderCreationDto {
     @NotBlank(message = "{fail.blank.address}")
+    @Size(min = 4, max = 35, message = "{fail.size.address}")
     private String address;
     @HasOrder(message = "{fail.order.absent}")
     private Map<Long, Integer> dishIdQuantityMap;

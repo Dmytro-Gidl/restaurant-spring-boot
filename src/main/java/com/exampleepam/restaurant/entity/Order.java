@@ -24,6 +24,7 @@ import java.util.Objects;
 @ToString
 public class Order extends AbstractBaseEntity{
 
+    @Column(length = 35)
     private String address;
     private LocalDateTime creationDateTime;
     private LocalDateTime updateDateTime;

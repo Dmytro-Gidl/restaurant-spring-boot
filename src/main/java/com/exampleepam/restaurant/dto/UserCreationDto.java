@@ -6,6 +6,7 @@ import com.exampleepam.restaurant.validator.ValidPassword;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.validator.constraints.Length;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
@@ -19,6 +20,7 @@ import javax.validation.constraints.NotBlank;
 @PasswordMatches(message = "{fail.matches.passwords}")
 public class UserCreationDto {
     @NotBlank(message = "{fail.blank.name}")
+    @Length(min = 2, max = 35, message ="{fail.size.name}")
     private String name;
 
     @NotBlank(message = "{fail.blank.email}")

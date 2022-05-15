@@ -46,7 +46,7 @@ public class OrderMapper {
                 .collect(Collectors.toList());
         return new OrderResponseDto(order.getId(), order.getStatus(), order.getAddress(),
                 order.getCreationDateTime(), order.getUpdateDateTime(),
-                order.getTotalPrice(), orderedItemResponseDtos);
+                order.getTotalPrice(),order.getUser().getName(), orderedItemResponseDtos);
     }
 }
 

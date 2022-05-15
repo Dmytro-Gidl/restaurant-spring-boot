@@ -113,8 +113,8 @@
                    + ${reverseSortDir}+ '&status=' + ${status} + '&pageSize=' + ${pageSize}}">
                         Address </a>
                 </th>
-                <th th:text="#{table.actions}"
-                > Actions</th>
+                <th th:text="#{order.client.name}"> Client name</th>
+                <th th:text="#{table.actions}"> Actions</th>
             </tr>
             </thead>
             <tbody>
@@ -134,6 +134,7 @@
                 </span>
                 </td>
                 <td th:text="${order.address}"></td>
+                <td th:text="${order.clientName}"></td>
 
                 <td>
                     <form th:if="${order.status.ordinal < 3}" class="d-inline"
