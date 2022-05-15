@@ -80,7 +80,7 @@ public class AdminDishControllerTest {
                 .andExpect(view().name("dishes-management"))
                 .andExpect(model().attributeExists("sortDir",
                         "filterCategory", "pageSize", "currentPage", "reverseSortDir",
-                        "dishPaged", "userBalance"));
+                        "dishPaged"));
     }
 
     @Test
@@ -95,19 +95,19 @@ public class AdminDishControllerTest {
         DishCreationDto dishCreationDto = getDishCreationDto();
 
 
-        MockMultipartFile emptyFile
+        MockMultipartFile notEmptyFile
                 = new MockMultipartFile(
                 "image",
                 "image.jpg",
                 MediaType.IMAGE_JPEG_VALUE,
-                new byte[0]
+     "Simulate not empty file".getBytes()
         );
         mockMvc.perform(multipart("/admin/dishes")
-                        .file(emptyFile)
+                        .file(notEmptyFile)
                         .flashAttr("dish", dishCreationDto)
                         .with(csrf()))
                 .andExpect(redirectedUrl("/admin/dishes"));
-        Mockito.verify(dishService, Mockito.times(1)).saveDish(dishCreationDto);
+        Mockito.verify(dishService, Mockito.times(1)).saveWithFile(dishCreationDto, notEmptyFile);
     }
 
     @Test

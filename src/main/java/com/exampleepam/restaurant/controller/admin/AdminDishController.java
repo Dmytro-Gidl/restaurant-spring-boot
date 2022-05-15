@@ -86,8 +86,10 @@ public class AdminDishController {
         if (!multipartFile.isEmpty() && originalFilename != null && !originalFilename.isBlank()) {
             String fileName = StringUtils.cleanPath(originalFilename);
             dishCreationDto.setImageFileName(fileName);
+            System.out.println("FIF");
             dishService.saveWithFile(dishCreationDto, multipartFile);
         } else {
+            System.out.println("FIELSE");
             dishService.save(dishCreationDto);
         }
 

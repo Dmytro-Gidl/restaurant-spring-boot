@@ -99,7 +99,7 @@ public class OrderControllerTest {
                 .andExpect(view().name("order-history"))
                 .andExpect(model().attributeExists("sortDir",
                         "status", "pageSize", "currentPage", "reverseSortDir",
-                        "orderList", "userBalance"));
+                        "orderList"));
     }
 
     @Test

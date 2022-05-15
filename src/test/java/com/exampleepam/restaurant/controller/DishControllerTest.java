@@ -63,7 +63,7 @@ public class DishControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("menu"))
                 .andExpect(model().attributeExists("filterCategory", "sortDir","dishList",
-                         "reverseSortDir", "userBalance"));
+                         "reverseSortDir"));
     }
 
 }

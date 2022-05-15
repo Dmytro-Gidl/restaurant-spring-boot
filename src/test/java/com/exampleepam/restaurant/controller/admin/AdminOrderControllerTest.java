@@ -49,7 +49,7 @@ public class AdminOrderControllerTest {
     void deleteOrder() throws Exception {
                 mockMvc.perform(MockMvcRequestBuilders.delete("/admin/orders/5")
                         .with(csrf()));
-        Mockito.verify(orderService, Mockito.times(1)).deleteOrderById(5);
+        Mockito.verify(orderService, Mockito.times(1)).delete(5);
     }
     @Test
      void findPaginated() throws Exception {
@@ -76,7 +76,7 @@ public class AdminOrderControllerTest {
                 .andExpect(view().name("order-management"))
                 .andExpect(model().attributeExists("sortDir",
                         "status", "pageSize", "currentPage", "reverseSortDir",
-                        "orderList", "userBalance"));
+                        "orderList"));
     }
 
     @Test
