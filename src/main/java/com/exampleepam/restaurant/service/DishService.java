@@ -129,7 +129,7 @@ public class DishService {
      */
     public List<DishResponseDto> findDishesByCategorySorted(String sortField,
                                                             String sortDir, String category) {
-        Sort sort = serviceUtil.getSort(sortDir, sortField);
+        Sort sort = serviceUtil.getSort(sortField, sortDir);
         List<Dish> dishes = dishRepository.findDishesByCategory(
                 Category.valueOf(category.toUpperCase(Locale.ENGLISH)), sort);
         return dishMapper.toDishResponseDtoList(dishes);

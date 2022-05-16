@@ -34,7 +34,7 @@ public class AdminDishController {
     }
 
 
-    @GetMapping
+    @GetMapping(value = {"", "/{id}"})
     public String getDishDefault(@AuthenticationPrincipal AuthenticatedUser authenticatedUser,
                                  Model model) {
         return findPaginated(1,
