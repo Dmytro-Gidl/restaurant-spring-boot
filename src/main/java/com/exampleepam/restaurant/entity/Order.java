@@ -1,16 +1,25 @@
 package com.exampleepam.restaurant.entity;
 
-import lombok.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Describes Order entity
@@ -22,7 +31,7 @@ import java.util.Objects;
 @Setter
 @Table(name = "orders")
 @ToString
-public class Order extends AbstractBaseEntity{
+public class Order extends AbstractBaseEntity {
 
     @Column(length = 35)
     private String address;
@@ -39,15 +48,12 @@ public class Order extends AbstractBaseEntity{
 
     @OneToMany(
             mappedBy = "order",
+            fetch = FetchType.EAGER,
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
     @ToString.Exclude
     private List<OrderItem> orderItems;
-
-
-
-
 
     public Order(long id, Status status, BigDecimal totalPrice,
                  String address, User user) {

@@ -1,17 +1,16 @@
 package com.exampleepam.restaurant.service;
 
 import com.exampleepam.restaurant.dto.UserCreationDto;
-import com.exampleepam.restaurant.entity.User;
-import com.exampleepam.restaurant.exception.EntityType;
-import com.exampleepam.restaurant.exception.ExceptionManager;
 import com.exampleepam.restaurant.exception.UserAlreadyExistAuthenticationException;
 import com.exampleepam.restaurant.mapper.UserMapper;
 import com.exampleepam.restaurant.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpSession;
 import java.math.BigDecimal;
 
+import static com.exampleepam.restaurant.controller.BaseController.USER_BALANCE_SESSION_ATTRIBUTE;
 import static com.exampleepam.restaurant.exception.ExceptionManager.getUserAlreadyExistsException;
 
 /**
@@ -19,8 +18,8 @@ import static com.exampleepam.restaurant.exception.ExceptionManager.getUserAlrea
  */
 @Service
 public class UserService {
-    UserRepository userRepository;
-    UserMapper userMapper;
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     public UserService(UserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
@@ -32,12 +31,11 @@ public class UserService {
      *
      * @param userCreationDto userCreationDTO to be mapped and saved
      * @throws UserAlreadyExistAuthenticationException if user already exists in DB
-     *
      */
     public void register(UserCreationDto userCreationDto) throws UserAlreadyExistAuthenticationException {
         String email = userCreationDto.getEmail();
-        var registredUser =  userRepository.findByEmail(email);
-        if(registredUser != null) {
+        var registredUser = userRepository.findByEmail(email);
+        if (registredUser != null) {
             throw getUserAlreadyExistsException(email);
         }
 
@@ -48,7 +46,6 @@ public class UserService {
      * Returns the user's nalance
      *
      * @param id id of the user balance of which to be fetched
-     *
      */
     public BigDecimal getUserBalance(long id) {
         return userRepository.getBalanceByUserId(id);
@@ -57,9 +54,8 @@ public class UserService {
     /**
      * Adds UAH to the user's balance
      *
-     * @param id id of the user whose balance should be topped up
+     * @param id           id of the user whose balance should be topped up
      * @param balanceToAdd amount of money to top up
-     *
      */
     @Transactional
     public void addUserBalance(long id, BigDecimal balanceToAdd) {
@@ -68,5 +64,8 @@ public class UserService {
         userRepository.setBalanceByUserId(id, newBalance);
     }
 
-
+    public void updateUserBalanceInSession(HttpSession session, long userId) {
+        BigDecimal userBalance = getUserBalance(userId);
+        session.setAttribute(USER_BALANCE_SESSION_ATTRIBUTE, userBalance);
+    }
 }

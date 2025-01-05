@@ -1,11 +1,14 @@
 package com.exampleepam.restaurant.entity;
 
-import lombok.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import javax.persistence.*;
-import java.util.Objects;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 
 /**
  * Describes OrderItem entity
@@ -15,10 +18,11 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItem extends AbstractBaseEntity{
+public class OrderItem extends AbstractBaseEntity {
 
-    @Column(length = 30)
-    private String dishName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dish_id")
+    private Dish dish;
     private Integer quantity;
 
 
@@ -26,8 +30,8 @@ public class OrderItem extends AbstractBaseEntity{
     @JoinColumn(name = "order_id")
     private Order order;
 
-    public OrderItem(String dishName, Integer quantity) {
-        this.dishName = dishName;
+    public OrderItem(Dish dish, Integer quantity) {
+        this.dish = dish;
         this.quantity = quantity;
     }
 }

@@ -28,9 +28,9 @@ import java.util.Locale;
  */
 @Service
 public class DishService {
-    DishRepository dishRepository;
-    DishMapper dishMapper;
-    ServiceUtil serviceUtil;
+    private final DishRepository dishRepository;
+    private final DishMapper dishMapper;
+    private final ServiceUtil serviceUtil;
     private static final String CATEGORY_ALL = "all";
 
     @Autowired
@@ -68,12 +68,10 @@ public class DishService {
         }
 
         Page<DishResponseDto> dishResponseDtoPage = dishPage
-                .map(dish -> dishMapper.toDishResponseDto(dish));
+                .map(dishMapper::toDishResponseDto);
 
         return new Paged<>(dishResponseDtoPage, Paging.of(dishPage.getTotalPages(), currentPage, pageSize));
-
     }
-
 
     /**
      * Saves a Dish

@@ -1,5 +1,6 @@
 package com.exampleepam.restaurant.controller.admin;
 
+import com.exampleepam.restaurant.controller.BaseController;
 import com.exampleepam.restaurant.dto.DishCreationDto;
 import com.exampleepam.restaurant.dto.DishResponseDto;
 import com.exampleepam.restaurant.entity.paging.Paged;
@@ -12,11 +13,17 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.persistence.EntityNotFoundException;
 import javax.validation.Valid;
 
 /**
@@ -25,7 +32,19 @@ import javax.validation.Valid;
 @Controller
 @Slf4j
 @RequestMapping("/admin/dishes")
-public class AdminDishController {
+public class AdminDishController extends BaseController {
+
+    private static final String DISH_PAGED_ATTRIBUTE_NAME = "dishPaged";
+    private static final String DISH_ATTRIBUTE_NAME = "dish";
+    private static final String REDIRECT_TO_ADMIN_DISHES = "redirect:/admin/dishes";
+    private static final String DISH_UPDATE_PAGE = "dish-update";
+    private static final String DISH_ADD_PAGE = "dish-add";
+    private static final String IMAGE_PARAM = "image";
+    private static final String DISHES_MANAGEMENT_PAGE = "dishes-management";
+    private static final int DEFAULT_PAGE = 1;
+    private static final String DEFAULT_SORT_FIELD = "category";
+    private static final String DEFAULT_FILTER_CATEGORY = "all";
+    private static final int DEFAULT_PAGE_SIZE = 10;
     private final DishService dishService;
 
     @Autowired
@@ -33,67 +52,62 @@ public class AdminDishController {
         this.dishService = dishService;
     }
 
-
     @GetMapping(value = {"", "/{id}"})
     public String getDishDefault(@AuthenticationPrincipal AuthenticatedUser authenticatedUser,
                                  Model model) {
-        return findPaginated(1,
-                "category", "asc", "all", 10, authenticatedUser, model);
+        return findPaginated(DEFAULT_PAGE,
+                DEFAULT_SORT_FIELD, ASCENDING_ORDER_SORTING, DEFAULT_FILTER_CATEGORY, DEFAULT_PAGE_SIZE, authenticatedUser, model);
     }
 
     @GetMapping("/page/{pageNo}")
-    public String findPaginated(@PathVariable("pageNo") int pageNo,
-                                @RequestParam("sortField") String sortField,
-                                @RequestParam("sortDir") String sortDir,
-                                @RequestParam("filterCategory") String filterCategory,
-                                @RequestParam("pageSize") int pageSize,
+    public String findPaginated(@PathVariable(PAGE_NUMBER_PARAM) int pageNo,
+                                @RequestParam(SORT_FIELD_PARAM) String sortField,
+                                @RequestParam(SORT_DIR_PARAM) String sortDir,
+                                @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory,
+                                @RequestParam(PAGE_SIZE_PARAM) int pageSize,
                                 @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
                                 Model model) {
         Paged<DishResponseDto> pagedOrder = dishService.findPaginated(pageNo, pageSize,
                 sortField, sortDir, filterCategory);
 
-        model.addAttribute("filterCategory", filterCategory);
-        model.addAttribute("currentPage", pageNo);
+        model.addAttribute(FILTER_CATEGORY_PARAM, filterCategory);
+        model.addAttribute(CURRENT_PAGE_PARAM, pageNo);
 
-        model.addAttribute("sortField", sortField);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("sortDir", sortDir);
-        model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
+        model.addAttribute(SORT_FIELD_PARAM, sortField);
+        model.addAttribute(PAGE_SIZE_PARAM, pageSize);
+        model.addAttribute(SORT_DIR_PARAM, sortDir);
+        model.addAttribute(REVERSE_SORT_DIR_PARAM, sortDir.equals(ASCENDING_ORDER_SORTING) ? DESCENDING_ORDER_SORTING : ASCENDING_ORDER_SORTING);
 
-        model.addAttribute("dishPaged", pagedOrder);
+        model.addAttribute(DISH_PAGED_ATTRIBUTE_NAME, pagedOrder);
 
-        return "dishes-management";
+        return DISHES_MANAGEMENT_PAGE;
     }
 
     @GetMapping("/newDishForm")
     public String returnDishCreationForm(Model model) {
-        model.addAttribute("dish", new DishCreationDto());
-        return "dish-add";
+        model.addAttribute(DISH_ATTRIBUTE_NAME, new DishCreationDto());
+        return DISH_ADD_PAGE;
     }
 
-
     @PostMapping
-    public String saveNewDish(@Valid @ModelAttribute("dish") DishCreationDto dishCreationDto,
+    public String saveNewDish(@Valid @ModelAttribute(DISH_ATTRIBUTE_NAME) DishCreationDto dishCreationDto,
                               BindingResult bindingResult,
-                              @RequestParam("image") MultipartFile multipartFile,
+                              @RequestParam(IMAGE_PARAM) MultipartFile multipartFile,
                               Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("dish", dishCreationDto);
-            return "dish-add";
+            model.addAttribute(DISH_ATTRIBUTE_NAME, dishCreationDto);
+            return DISH_ADD_PAGE;
         }
 
         String originalFilename = multipartFile.getOriginalFilename();
         if (!multipartFile.isEmpty() && originalFilename != null && !originalFilename.isBlank()) {
             String fileName = StringUtils.cleanPath(originalFilename);
             dishCreationDto.setImageFileName(fileName);
-            System.out.println("FIF");
             dishService.saveWithFile(dishCreationDto, multipartFile);
         } else {
-            System.out.println("FIELSE");
             dishService.save(dishCreationDto);
         }
-
-        return "redirect:/admin/dishes";
+        return REDIRECT_TO_ADMIN_DISHES;
     }
 
 
@@ -101,19 +115,19 @@ public class AdminDishController {
     public String deleteDish(
             @PathVariable(value = "id") int id,
             @PathVariable(value = "page") int pageNo,
-            @RequestParam("sortField") String sortField,
-            @RequestParam("sortDir") String sortDir,
-            @RequestParam("pageSize") int pageSize,
-            @RequestParam("filterCategory") String filterCategory
+            @RequestParam(SORT_FIELD_PARAM) String sortField,
+            @RequestParam(SORT_DIR_PARAM) String sortDir,
+            @RequestParam(PAGE_SIZE_PARAM) int pageSize,
+            @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory
     ) {
         dishService.deleteDishById(id);
 
 
         String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
-                .queryParam("sortField", sortField)
-                .queryParam("sortDir", sortDir)
-                .queryParam("pageSize", pageSize)
-                .queryParam("filterCategory", filterCategory)
+                .queryParam(SORT_FIELD_PARAM, sortField)
+                .queryParam(SORT_DIR_PARAM, sortDir)
+                .queryParam(PAGE_SIZE_PARAM, pageSize)
+                .queryParam(FILTER_CATEGORY_PARAM, filterCategory)
                 .buildAndExpand(pageNo)
                 .toUriString();
         return "redirect:" + redirectLink;
@@ -121,17 +135,17 @@ public class AdminDishController {
 
     @PutMapping("/{id}")
     public String updateDish(
-            @Valid @ModelAttribute("dish") DishCreationDto dishCreationDto,
+            @Valid @ModelAttribute(DISH_ATTRIBUTE_NAME) DishCreationDto dishCreationDto,
             BindingResult bindingResult,
-            @RequestParam(value = "image", required = false) MultipartFile multipartFile,
+            @RequestParam(value = IMAGE_PARAM, required = false) MultipartFile multipartFile,
             Model model
     ) {
         long dishId = dishCreationDto.getId();
 
         if (bindingResult.hasErrors()) {
 
-            model.addAttribute("dish", dishCreationDto);
-            return "dish-update";
+            model.addAttribute(DISH_ATTRIBUTE_NAME, dishCreationDto);
+            return DISH_UPDATE_PAGE;
         }
 
         String originalFilename = multipartFile.getOriginalFilename();
@@ -146,16 +160,12 @@ public class AdminDishController {
                 dishCreationDto.setImageFileName(oldDish.getImageFileName());
                 dishService.save(dishCreationDto);
             } else {
-                log.debug(String.format("Admin tried to update a dish with id %d. But the dish was not found in DB",
-                        dishId));
+                log.debug("Admin tried to update a dish with id {}. But the dish was not found in DB", dishId);
             }
-
-
         }
 
-        return "redirect:/admin/dishes";
+        return REDIRECT_TO_ADMIN_DISHES;
     }
-
 
     @GetMapping("{id}/update-form")
     public String returnDishUpdateForm(
@@ -163,14 +173,12 @@ public class AdminDishController {
             Model model) {
         DishResponseDto dishResponseDto = dishService.getDishById(id);
 
-        if(dishResponseDto != null) {
-            model.addAttribute("dish", dishResponseDto);
+        if (dishResponseDto != null) {
+            model.addAttribute(DISH_ATTRIBUTE_NAME, dishResponseDto);
         } else {
-            log.debug(String.format("Admin tried to update a dish with id %d. But the dish was not found in DB", id));
+            log.debug("Admin tried to update a dish with id {}. But the dish was not found in DB", id);
             return "redirect:/admin/orders";
         }
-
-
-        return "dish-update";
+        return DISH_UPDATE_PAGE;
     }
 }

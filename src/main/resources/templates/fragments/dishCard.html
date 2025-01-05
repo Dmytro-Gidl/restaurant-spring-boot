@@ -1,4 +1,4 @@
-<div th:fragment="dishCard(dish)">
+<div th:fragment="dishCard(dish)" xmlns:th="http://www.w3.org/1999/xhtml">
     <div class="single-menu">
         <img th:if="${dish.imageFileName != null}"
              th:src="@{${dish.getimagePath()}}"
@@ -16,11 +16,12 @@
             <p th:text="${dish.description}" class="menu-description">Description</p>
 
             <div class="myContainer m-1">
-                <button class="decrement" type="button" onclick="stepperDecrement(this)">-</button>
                 <label th:attr="for=${'dishQty_' + dish.id}" class="visually-hidden">
                     Quantity
                 </label>
+                <button class="decrement" type="button" onclick="stepperDecrement(this)">-</button>
                 <input
+                        id="dishQty_${dish.id}"
                         th:value="0"
                         th:name="${'dishIdQuantityMap[' + dish.id + ']'}"
                         type="number"
@@ -31,6 +32,7 @@
                 />
                 <button class="increment" type="button" onclick="stepperIncrement(this)">+</button>
             </div>
+
         </div>
     </div>
 </div>

@@ -3,13 +3,16 @@ package com.exampleepam.restaurant.mapper;
 import com.exampleepam.restaurant.dto.OrderCreationDto;
 import com.exampleepam.restaurant.dto.OrderResponseDto;
 import com.exampleepam.restaurant.dto.OrderedItemResponseDto;
-import com.exampleepam.restaurant.entity.*;
+import com.exampleepam.restaurant.entity.Dish;
+import com.exampleepam.restaurant.entity.Order;
+import com.exampleepam.restaurant.entity.OrderItem;
+import com.exampleepam.restaurant.entity.Status;
+import com.exampleepam.restaurant.entity.User;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Mapper class for Order and OrderDTOs
@@ -29,24 +32,24 @@ public class OrderMapper {
 
     private BigDecimal getOrderTotalPrice(Map<Dish, Integer> dishQuantityMap) {
         return dishQuantityMap.entrySet().stream()
-                .map(d -> d.getKey().getPrice().multiply(new BigDecimal(d.getValue())))
+                .map(e -> e.getKey().getPrice().multiply(BigDecimal.valueOf(e.getValue())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private List<OrderItem> getOrderItems(Map<Dish, Integer> dishQuantityMap) {
         return dishQuantityMap.entrySet().stream()
-                .map(entry -> new OrderItem(entry.getKey().getName(), entry.getValue()))
-                .collect(Collectors.toList());
+                .map(entry -> new OrderItem(entry.getKey(), entry.getValue()))
+                .toList();
     }
 
     public OrderResponseDto toOrderResponseDto(Order order) {
         List<OrderedItemResponseDto> orderedItemResponseDtos = order.getOrderItems().stream()
                 .map(orderItem ->
-                        new OrderedItemResponseDto(orderItem.getDishName(), orderItem.getQuantity()))
-                .collect(Collectors.toList());
+                        new OrderedItemResponseDto(orderItem.getDish().getName(), orderItem.getQuantity()))
+                .toList();
         return new OrderResponseDto(order.getId(), order.getStatus(), order.getAddress(),
                 order.getCreationDateTime(), order.getUpdateDateTime(),
-                order.getTotalPrice(),order.getUser().getName(), orderedItemResponseDtos);
+                order.getTotalPrice(), order.getUser().getName(), orderedItemResponseDtos);
     }
 }
 
