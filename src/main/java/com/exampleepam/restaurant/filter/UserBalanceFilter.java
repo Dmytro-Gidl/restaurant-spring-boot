@@ -20,9 +20,9 @@ import java.math.BigDecimal;
 //@Component
 public class UserBalanceFilter implements Filter {
 
+//    @Autowired
     private final UserService userService;
 
-    @Autowired
     public UserBalanceFilter(UserService userService) {
         this.userService = userService;
     }

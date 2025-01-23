@@ -81,9 +81,9 @@ public static final String ADMIN_EMAIL = "adminEmail@gmail.com";
         List<OrderedItemResponseDto> orderItems1 = Arrays.asList(orderItem1, orderItem2);
         List<OrderedItemResponseDto> orderItems2 = Arrays.asList(orderItem1, orderItem2, orderItem3);
         OrderResponseDto orderResponseDto1 = new OrderResponseDto(5, Status.DECLINED,
-                "Address1", dateTimeNow, dateTimeNow, BigDecimal.valueOf(1155), "testClient1", orderItems1);
+                "Address1", false, dateTimeNow, dateTimeNow, BigDecimal.valueOf(1155), "testClient1", orderItems1);
         OrderResponseDto orderResponseDto2 = new OrderResponseDto(5, Status.DECLINED,
-                "Address1", dateTimeNow, dateTimeNow, BigDecimal.valueOf(1155), "testClient2",orderItems2);
+                "Address1", false, dateTimeNow, dateTimeNow, BigDecimal.valueOf(1155), "testClient2",orderItems2);
 
         List<OrderResponseDto> responseDtos = Arrays.asList(orderResponseDto1, orderResponseDto2);
                 Pageable pageable = PageRequest.of(1, 10, Sort.by("id").ascending());

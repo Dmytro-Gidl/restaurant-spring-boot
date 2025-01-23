@@ -15,10 +15,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@Builder
 public class OrderResponseDto {
     private long id;
     private Status status;
     private String address;
+    private boolean isReviewed;
     private LocalDateTime creationDateTime;
     private LocalDateTime updateDateTime;
     private BigDecimal totalPrice;

@@ -15,6 +15,7 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -46,6 +47,10 @@ public class Order extends AbstractBaseEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToOne
+    @JoinColumn(name = "order_id")
+    private Review review;
+
     @OneToMany(
             mappedBy = "order",
             fetch = FetchType.EAGER,
@@ -65,6 +70,20 @@ public class Order extends AbstractBaseEntity {
         this.address = address;
         this.user = user;
         this.orderItems = new ArrayList<>();
+    }
+
+    public Order(Long id, String address, LocalDateTime creationDateTime, LocalDateTime updateDateTime,
+                 BigDecimal totalPrice, Status status, User user, Review review,
+                 List<OrderItem> orderItems) {
+        this.id = id;
+        this.address = address;
+        this.creationDateTime = creationDateTime;
+        this.updateDateTime = updateDateTime;
+        this.totalPrice = totalPrice;
+        this.status = status;
+        this.user = user;
+        this.review = review;
+        this.orderItems = orderItems;
     }
 
     public void addOrderItem(OrderItem orderItem) {

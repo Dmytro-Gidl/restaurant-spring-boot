@@ -47,9 +47,16 @@ public class OrderMapper {
                 .map(orderItem ->
                         new OrderedItemResponseDto(orderItem.getDish().getName(), orderItem.getQuantity()))
                 .toList();
-        return new OrderResponseDto(order.getId(), order.getStatus(), order.getAddress(),
-                order.getCreationDateTime(), order.getUpdateDateTime(),
-                order.getTotalPrice(), order.getUser().getName(), orderedItemResponseDtos);
+        return OrderResponseDto.builder()
+                .id(order.getId())
+                .status(order.getStatus())
+                .address(order.getAddress())
+                .creationDateTime(order.getCreationDateTime())
+                .updateDateTime(order.getUpdateDateTime())
+                .totalPrice(order.getTotalPrice())
+                .clientName(order.getUser().getName())
+                .orderItems(orderedItemResponseDtos)
+                .isReviewed(order.getReview() != null).build();
     }
 }
 

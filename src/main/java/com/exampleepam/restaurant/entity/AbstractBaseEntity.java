@@ -24,7 +24,7 @@ public class AbstractBaseEntity {
             generator = "seq_gen")
     @SequenceGenerator(
             name = "seq_gen")
-    protected long id;
+    protected Long id;
 
 
     @Override
@@ -33,7 +33,7 @@ public class AbstractBaseEntity {
         if (o == null || getClass() != o.getClass()) return false;
         AbstractBaseEntity that = (AbstractBaseEntity) o;
         if (id == 0) return false;
-        return id == that.id;
+        return id.equals(that.id);
     }
 
     @Override

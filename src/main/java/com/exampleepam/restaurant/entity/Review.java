@@ -10,6 +10,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
@@ -26,11 +27,14 @@ public class Review extends AbstractBaseEntity {
     @JoinColumn(name = "dish_id", nullable = false)
     private Dish dish;
 
+    @OneToOne
+    private Order order;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    private int rating; // или double
+    private int rating;
 
     @Column(length = 500)
     private String comment;
@@ -42,4 +46,3 @@ public class Review extends AbstractBaseEntity {
         creationDateTime = LocalDateTime.now();
     }
 }
-

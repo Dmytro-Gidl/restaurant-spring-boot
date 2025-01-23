@@ -2,9 +2,6 @@ package com.exampleepam.restaurant.controller;
 
 public class BaseController {
 
-    private BaseController() {
-    }
-
     //    Params
     protected static final String SORT_FIELD_PARAM = "sortField";
     protected static final String SORT_DIR_PARAM = "sortDir";
@@ -30,16 +27,4 @@ public class BaseController {
     // General
     protected static final String ASCENDING_ORDER_SORTING = "asc";
     protected static final String DESCENDING_ORDER_SORTING = "desc";
-
-//    private final UserService userService;
-//
-//    @Autowired
-//    protected BaseController(UserService userService) {
-//        this.userService = userService;
-//    }
-//
-//    protected void updateUserBalanceInSession(HttpSession session, long userId) {
-//        BigDecimal userBalance = userService.getUserBalance(userId);
-//        session.setAttribute(USER_BALANCE_SESSION_ATTRIBUTE, userBalance);
-//    }
 }
