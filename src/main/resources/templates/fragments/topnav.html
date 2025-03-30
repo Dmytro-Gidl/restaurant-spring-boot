@@ -1,76 +1,86 @@
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-
 <div th:fragment="navbar">
     <header class="p-3 bg-dark myNav">
         <div class="d-flex align-items-center justify-content-between">
-            <!-- Navigation Links -->
-            <ul class="nav d-flex align-items-end col-lg-auto me-lg-auto mb-0">
-                <li><a th:text="#{home.page}" href="\" class="nav-link px-2 text-secondary">Home</a></li>
-                <li th:if="${#authorization.expression('isAuthenticated()')}">
-                    <a th:text="#{header.order.history}" href="/orders/history" class="nav-link px-2 text-white">Order
-                        History</a>
+            <!-- Left Navigation Links -->
+            <ul class="nav d-flex align-items-end mb-0">
+                <li>
+                    <a th:text="#{home.page}" href="/" class="nav-link px-2 text-secondary">Home</a>
                 </li>
-                <li><a th:text="#{header.menu}" href="/menu" class="nav-link px-2 text-white">Menu</a></li>
+                <li th:if="${#authorization.expression('isAuthenticated()')}">
+                    <a th:text="#{header.order.history}" href="/orders/history" class="nav-link px-2 text-white">Order History</a>
+                </li>
+                <li>
+                    <a th:text="#{header.menu}" href="/menu" class="nav-link px-2 text-white">Menu</a>
+                </li>
                 <th:block sec:authorize="hasAuthority('ADMIN')">
-                    <li><a th:text="#{header.manage.orders}" href="/admin/orders" class="nav-link px-2 text-warning">Manage
-                        Orders</a></li>
-                    <li><a th:text="#{header.manage.menu}" href="/admin/dishes" class="nav-link px-2 text-warning">Manage
-                        Menu</a></li>
+                    <li>
+                        <a th:text="#{header.manage.orders}" href="/admin/orders" class="nav-link px-2 text-warning">Manage Orders</a>
+                    </li>
+                    <li>
+                        <a th:text="#{header.manage.menu}" href="/admin/dishes" class="nav-link px-2 text-warning">Manage Menu</a>
+                    </li>
                 </th:block>
             </ul>
 
-            <!-- Language Switcher -->
-            <a class="nav-link"
-               th:with="urlBuilder=${T(org.springframework.web.servlet.support.ServletUriComponentsBuilder).fromCurrentRequest()}"
-               th:href="${urlBuilder.replaceQueryParam('lang', 'en').toUriString()}">
-                <img th:src="@{/images/enLang.jpg}" width="30">
-            </a>
-            <a class="nav-link"
-               th:with="urlBuilder=${T(org.springframework.web.servlet.support.ServletUriComponentsBuilder).fromCurrentRequest()}"
-               th:href="${urlBuilder.replaceQueryParam('lang', 'ua').toUriString()}">
-                <img th:src="@{/images/uaLang.jpg}" width="30">
-            </a>
-
-            <!-- User Info and Actions -->
+            <!-- Right Side: Language Switcher, Cart, and User Actions -->
             <div class="d-flex align-items-center">
-                <div class="fw-bold me-3" th:if="${session.userBalance != null}">
-                    <span th:text="#{balance.name}" class="text-white">Your balance:</span>
-                    <span th:text="${session.userBalance}" class="text-warning">0</span>
-                    <span class="text-warning">₴</span>
-                </div>
-
-                <div th:if="${#authorization.expression('isAnonymous()')}">
-                    <button onclick="window.location.href='login'"
-                            th:text="#{header.login}"
-                            type="button"
-                            class="btn btn-outline-light me-2">Login
-                    </button>
-                    <button onclick="window.location.href='signup'"
-                            th:text="#{header.signup}"
-                            type="button"
-                            class="btn btn-warning">Sign-up
-                    </button>
-                </div>
-
-                <th:block th:if="${session.userBalance != null}">
-                    <button
+                <!-- Language Switcher -->
+                <a class="nav-link"
+                   th:with="urlBuilder=${T(org.springframework.web.servlet.support.ServletUriComponentsBuilder).fromCurrentRequest()}"
+                   th:href="${urlBuilder.replaceQueryParam('lang', 'en').toUriString()}">
+                    <img th:src="@{/images/enLang.jpg}" width="30">
+                </a>
+                <a class="nav-link"
+                   th:with="urlBuilder=${T(org.springframework.web.servlet.support.ServletUriComponentsBuilder).fromCurrentRequest()}"
+                   th:href="${urlBuilder.replaceQueryParam('lang', 'ua').toUriString()}">
+                    <img th:src="@{/images/uaLang.jpg}" width="30">
+                </a>
+                <!-- User Info and Actions -->
+                <div class="d-flex align-items-center">
+                    <div class="fw-bold me-3" th:if="${session.userBalance != null}">
+                        <span th:text="#{balance.name}" class="text-white">Your balance:</span>
+                        <span th:text="${session.userBalance}" class="text-warning">0</span>
+                        <span class="text-warning">₴</span>
+                    </div>
+                    <div th:if="${#authorization.expression('isAnonymous()')}">
+                        <button onclick="window.location.href='login'"
+                                th:text="#{header.login}"
+                                type="button"
+                                class="btn btn-outline-light me-2">Login
+                        </button>
+                        <button onclick="window.location.href='signup'"
+                                th:text="#{header.signup}"
+                                type="button"
+                                class="btn btn-warning">Sign-up
+                        </button>
+                    </div>
+                    <th:block th:if="${session.userBalance != null}">
+                        <button
                             th:text="#{balance.topup}"
                             type="button"
                             class="btn btn-outline-light me-2"
                             data-bs-toggle="modal"
                             data-bs-target="#balanceTopUp">Top up
-                    </button>
-                </th:block>
-
-                <button
+                        </button>
+                    </th:block>
+                    <button
                         th:if="${#authorization.expression('isAuthenticated()')}"
                         onclick="document.getElementById('logoutForm').submit()"
                         th:text="#{header.logout}"
                         type="button"
                         class="btn btn-outline-light">
-                    Logout
-                </button>
-                <form id="logoutForm" th:action="@{/logout}" method="post" style="display: none;"></form>
+                        Logout
+                    </button>
+                    <form id="logoutForm" th:action="@{/logout}" method="post" style="display: none;"></form>
+                </div>
+
+                <!-- NEW: Checkout Button, only for authenticated users -->
+                <th:block th:if="${#authorization.expression('isAuthenticated()')}">
+                    <a href="/orders/checkout" class="btn btn-outline-light ms-3">
+                        <i class="fas fa-shopping-cart me-1"></i>
+                        <span th:text="#{header.checkout}">Checkout</span>
+                    </a>
+                </th:block>
             </div>
         </div>
     </header>
@@ -88,19 +98,23 @@
                 <div class="modal-body">
                     <form th:action="@{/topup/}" th:method="put" enctype="multipart/form-data">
                         <div class="mb-3">
-                            <label th:text="#{modal.balance.topup.label}" for="balance" class="form-label">Amount of
-                                money in UAH</label>
+                            <label th:text="#{modal.balance.topup.label}" for="balance" class="form-label">Amount of money in UAH</label>
                             <input name="balance" type="number" class="form-control" id="balance" min="0" required/>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button th:text="#{modal.balance.topup.submit}" type="submit" class="btn btn-primary">
-                                Submit
-                            </button>
+                            <button th:text="#{modal.balance.topup.submit}" type="submit" class="btn btn-primary">Submit</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Custom styles for cart (optional adjustments) -->
+    <style>
+        /* You can tweak these styles to better blend with your navbar */
+        .cart-icon {
+            font-size: 1.2rem;
+        }
+    </style>
 </div>
-</html>

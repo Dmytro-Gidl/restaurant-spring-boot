@@ -1,7 +1,7 @@
 package com.exampleepam.restaurant.service;
 
-import com.exampleepam.restaurant.dto.DishCreationDto;
-import com.exampleepam.restaurant.dto.DishResponseDto;
+import com.exampleepam.restaurant.dto.dish.DishCreationDto;
+import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.entity.Category;
 import com.exampleepam.restaurant.entity.Dish;
 import com.exampleepam.restaurant.entity.paging.Paged;

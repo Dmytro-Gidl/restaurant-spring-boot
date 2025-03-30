@@ -1,8 +1,8 @@
 package com.exampleepam.restaurant.controller.admin;
 
 import com.exampleepam.restaurant.controller.BaseController;
-import com.exampleepam.restaurant.dto.DishCreationDto;
-import com.exampleepam.restaurant.dto.DishResponseDto;
+import com.exampleepam.restaurant.dto.dish.DishCreationDto;
+import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.DishService;

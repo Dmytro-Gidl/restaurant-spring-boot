@@ -1,12 +1,10 @@
 package com.exampleepam.restaurant.mapper;
 
-import com.exampleepam.restaurant.dto.UserCreationDto;
+import com.exampleepam.restaurant.dto.user.UserCreationDto;
 import com.exampleepam.restaurant.entity.Role;
 import com.exampleepam.restaurant.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-import java.util.Arrays;
 
 /**
  * Mapper class for User and UserDTOs

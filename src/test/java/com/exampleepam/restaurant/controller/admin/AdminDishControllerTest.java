@@ -1,11 +1,9 @@
 package com.exampleepam.restaurant.controller.admin;
 
 import com.exampleepam.restaurant.ControllerConfiguration;
-import com.exampleepam.restaurant.dto.DishCreationDto;
-import com.exampleepam.restaurant.dto.DishResponseDto;
+import com.exampleepam.restaurant.dto.dish.DishCreationDto;
 import com.exampleepam.restaurant.security.MyUserDetailsService;
 import com.exampleepam.restaurant.service.DishService;
-import com.exampleepam.restaurant.service.OrderService;
 import com.exampleepam.restaurant.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -19,17 +17,8 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.persistence.EntityNotFoundException;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
-import java.util.HashMap;
 
 import static com.exampleepam.restaurant.test_data.TestData.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;

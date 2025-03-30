@@ -1,6 +1,6 @@
 package com.exampleepam.restaurant.controller;
 
-import com.exampleepam.restaurant.dto.ReviewForm;
+import com.exampleepam.restaurant.dto.review.ReviewForm;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.ReviewService;
 import lombok.extern.slf4j.Slf4j;

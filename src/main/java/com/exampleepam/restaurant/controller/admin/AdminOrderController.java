@@ -1,7 +1,7 @@
 package com.exampleepam.restaurant.controller.admin;
 
 import com.exampleepam.restaurant.controller.BaseController;
-import com.exampleepam.restaurant.dto.OrderResponseDto;
+import com.exampleepam.restaurant.dto.order.OrderResponseDto;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.exception.UnauthorizedActionException;
 import com.exampleepam.restaurant.security.AuthenticatedUser;

@@ -1,6 +1,6 @@
 package com.exampleepam.restaurant.controller;
 
-import com.exampleepam.restaurant.dto.UserCreationDto;
+import com.exampleepam.restaurant.dto.user.UserCreationDto;
 import com.exampleepam.restaurant.exception.UserAlreadyExistAuthenticationException;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.UserService;

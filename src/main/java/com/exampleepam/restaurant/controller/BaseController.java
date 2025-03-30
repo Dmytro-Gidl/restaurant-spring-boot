@@ -16,6 +16,7 @@ public class BaseController {
     protected static final String DISH_LIST_ATTRIBUTE = "dishList";
     protected static final String ORDER_LIST_ATTRIBUTE = "orderList";
     public static final String USER_BALANCE_SESSION_ATTRIBUTE = "userBalance";
+    public static final String USER_CART_ITEMS_SESSION_ATTRIBUTE = "userCartItemsTotalNumber";
     protected static final String ORDER_CREATION_TIME_FIELD = "creationDateTime";
 
     // Redirects
