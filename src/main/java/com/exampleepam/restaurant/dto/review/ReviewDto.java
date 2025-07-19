@@ -28,4 +28,10 @@ public class ReviewDto {
     @NotBlank
     @Size(max = 300, message = "Comment can be at most 300 characters")
     private String comment;
+
+    /**
+     * Name of the user who left the review. Not required when submitting a review,
+     * but used for displaying reviews on the site.
+     */
+    private String userName;
 }

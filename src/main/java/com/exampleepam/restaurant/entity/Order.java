@@ -34,7 +34,9 @@ import java.util.List;
 @ToString
 public class Order extends AbstractBaseEntity {
 
-    @Column(length = 35)
+    // Increase to 50 so it matches validation constraints in OrderCreationDto
+    // and avoids DataIntegrityViolationException when user enters longer addresses
+    @Column(length = 50)
     private String address;
     private LocalDateTime creationDateTime;
     private LocalDateTime updateDateTime;
@@ -50,6 +52,13 @@ public class Order extends AbstractBaseEntity {
     @OneToOne
     @JoinColumn(name = "order_id")
     private Review review;
+
+    /**
+     * Indicates whether the customer already submitted reviews for this order.
+     * Used to prevent multiple review submissions.
+     */
+    @Column(nullable = false)
+    private boolean reviewed = false;
 
     @OneToMany(
             mappedBy = "order",
@@ -74,7 +83,7 @@ public class Order extends AbstractBaseEntity {
 
     public Order(Long id, String address, LocalDateTime creationDateTime, LocalDateTime updateDateTime,
                  BigDecimal totalPrice, Status status, User user, Review review,
-                 List<OrderItem> orderItems) {
+                 List<OrderItem> orderItems, boolean reviewed) {
         this.id = id;
         this.address = address;
         this.creationDateTime = creationDateTime;
@@ -84,6 +93,7 @@ public class Order extends AbstractBaseEntity {
         this.user = user;
         this.review = review;
         this.orderItems = orderItems;
+        this.reviewed = reviewed;
     }
 
     public void addOrderItem(OrderItem orderItem) {

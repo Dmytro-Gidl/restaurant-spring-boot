@@ -122,7 +122,7 @@ public class AdminDishController extends BaseController {
             @RequestParam(PAGE_SIZE_PARAM) int pageSize,
             @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory
     ) {
-        dishService.deleteDishById(id);
+        dishService.archiveDishById(id);
 
 
         String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")

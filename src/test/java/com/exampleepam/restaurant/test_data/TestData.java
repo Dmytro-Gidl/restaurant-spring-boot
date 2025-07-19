@@ -72,16 +72,20 @@ public class TestData {
   // DishResposneDTO
   public static DishResponseDto getDishResponseDto() {
     return new DishResponseDto(2, "Dish1",
-        "Description of Dish1", CategoryDto.DRINKS, BigDecimal.TEN, "image");
+        "Description of Dish1", CategoryDto.DRINKS,
+        BigDecimal.TEN, "image", 0);
   }
 
   public static List<DishResponseDto> getDishResponseDtos() {
     DishResponseDto dishResponseDto1 = new DishResponseDto(2, "Dish1",
-        "Description of Dish1", CategoryDto.DRINKS, BigDecimal.TEN, "image");
+        "Description of Dish1", CategoryDto.DRINKS,
+        BigDecimal.TEN, "image", 0);
     DishResponseDto dishResponseDto2 = new DishResponseDto(3, "Dish2",
-        "Description of Dish2", CategoryDto.SNACKS, BigDecimal.valueOf(25), "image2");
+        "Description of Dish2", CategoryDto.SNACKS,
+        BigDecimal.valueOf(25), "image2", 0);
     DishResponseDto dishResponseDto3 = new DishResponseDto(3, "Dish3",
-        "Description of Dish3", CategoryDto.SNACKS, BigDecimal.valueOf(45), "image3");
+        "Description of Dish3", CategoryDto.SNACKS,
+        BigDecimal.valueOf(45), "image3", 0);
     return Arrays.asList(dishResponseDto1, dishResponseDto2, dishResponseDto3);
   }
 

@@ -219,3 +219,8 @@ input::-webkit-inner-spin-button {
 #bottom-right-cart {
     visibility: hidden;
 }
+
+.star-display .fa {
+    color: #FFD700;
+    margin-right: 2px;
+}
