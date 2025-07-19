@@ -5,18 +5,9 @@
     <meta
             name="viewport"
             content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
     <title>Review Order</title>
 
-    <!--
-      Use Font Awesome 4.7 from cdnjs
-      so fa-star-o / fa-star are recognized.
-    -->
-    <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-    />
 
     <!-- Optional Google Font -->
     <link
@@ -101,15 +92,15 @@
            - unselected: lighter yellow (#FBC02D)
            - hovered/selected: gold (#FFD700)
         */
-        .star-rating .fa {
+        .star-rating i {
             font-size: 1.8rem;
             color: #FBC02D; /* unselected base color */
             cursor: pointer;
             margin-right: 4px;
             transition: color 0.2s;
         }
-        .star-rating .fa-star-o:hover,
-        .star-rating .fa-star-o.hovered {
+        .star-rating .far.fa-star:hover,
+        .star-rating .far.fa-star.hovered {
             color: #FFD700; /* bright gold on hover */
         }
 
@@ -178,11 +169,11 @@
                 <!-- Star rating -->
                 <label class="form-label" th:text="#{review.rating}">Rating</label>
                 <div class="star-rating">
-                    <i class="fa fa-star-o" data-value="1"></i>
-                    <i class="fa fa-star-o" data-value="2"></i>
-                    <i class="fa fa-star-o" data-value="3"></i>
-                    <i class="fa fa-star-o" data-value="4"></i>
-                    <i class="fa fa-star-o" data-value="5"></i>
+                    <i class="far fa-star" data-value="1"></i>
+                    <i class="far fa-star" data-value="2"></i>
+                    <i class="far fa-star" data-value="3"></i>
+                    <i class="far fa-star" data-value="4"></i>
+                    <i class="far fa-star" data-value="5"></i>
                 </div>
                 <input type="hidden" th:field="*{reviews[__${iterStat.index}__].rating}" />
 
@@ -212,7 +203,7 @@
 <script>
     // For each dish-row, handle star rating
     document.querySelectorAll('.dish-row').forEach(dishRow => {
-        const stars = dishRow.querySelectorAll('.star-rating .fa-star-o');
+        const stars = dishRow.querySelectorAll('.star-rating .far.fa-star, .star-rating .fas.fa-star');
         const ratingInput = dishRow.querySelector('input[name*="rating"]');
 
         stars.forEach(star => {
@@ -244,8 +235,8 @@
             const starValue = parseInt(star.getAttribute('data-value'));
             if (starValue <= value) {
                 // Replace outline with filled star
-                star.classList.remove('fa-star-o');
-                star.classList.add('fa-star', 'selected');
+                star.classList.remove('far', 'fa-star');
+                star.classList.add('fas', 'fa-star', 'selected');
                 // Also set color to #FFD700 for bright gold
                 star.style.color = '#FFD700';
             }
@@ -254,11 +245,9 @@
 
     function resetStars(stars) {
         stars.forEach(star => {
-            star.classList.remove('fa-star', 'selected');
+            star.classList.remove('fas', 'fa-star', 'selected');
+            star.classList.add('far', 'fa-star');
             star.style.color = '#FBC02D';  // revert to unselected color
-            if (!star.classList.contains('fa-star-o')) {
-                star.classList.add('fa-star-o');
-            }
         });
     }
 </script>
