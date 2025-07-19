@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
+
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -34,4 +36,9 @@ public class ReviewDto {
      * but used for displaying reviews on the site.
      */
     private String userName;
+
+    /**
+     * Timestamp when the review was created.
+     */
+    private LocalDateTime creationDateTime;
 }
