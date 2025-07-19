@@ -17,7 +17,7 @@ public class DishMapper {
 
   public DishResponseDto toDishResponseDto(Dish dish) {
     return new DishResponseDto(dish.getId(), dish.getName(), dish.getDescription(),
-        CategoryDto.valueOf(dish.getCategory().name()), dish.getPrice(), dish.getImageFileName());
+        CategoryDto.valueOf(dish.getCategory().name()), dish.getPrice(), dish.getImageFileName(), 0);
   }
 
   public Dish toDish(DishCreationDto dishCreationDto) {

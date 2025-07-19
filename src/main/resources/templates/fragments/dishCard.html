@@ -17,6 +17,13 @@
         <p th:text="${dish.category}">Category</p>
         <p th:text="${dish.description}" class="menu-description">Description</p>
 
+        <div class="star-display mb-2">
+            <span th:each="i : ${#numbers.sequence(1,5)}">
+                <i class="fa" th:class="${dish.averageRating >= i ? 'fa-star text-warning' : 'fa-star-o text-warning'}"></i>
+            </span>
+            <a th:href="@{/dishes/{id}/reviews(id=${dish.id})}" class="ms-2 link-light">Reviews</a>
+        </div>
+
         <div class="myContainer m-1">
             <label th:attr="for=${'dishQty_' + dish.id}" class="visually-hidden">
                 Quantity

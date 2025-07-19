@@ -23,6 +23,7 @@ public class DishResponseDto {
   private CategoryDto category;
   private BigDecimal price;
   private String imageFileName;
+  private double averageRating;
 
   public String getimagePath() {
     if (imageFileName == null || id == 0) {

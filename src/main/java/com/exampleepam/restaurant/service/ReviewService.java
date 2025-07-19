@@ -95,4 +95,16 @@ public class ReviewService {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new IllegalArgumentException("Order not found"));
         return order.getId().equals(userId);
     }
+
+    public List<ReviewDto> getReviewsForDish(Long dishId) {
+        return reviewRepository.findAllByDishId(dishId)
+                .stream()
+                .map(reviewMapper::toDto)
+                .toList();
+    }
+
+    public double getAverageRatingForDish(Long dishId) {
+        Double avg = reviewRepository.getAverageRatingByDishId(dishId);
+        return avg == null ? 0 : avg;
+    }
 }

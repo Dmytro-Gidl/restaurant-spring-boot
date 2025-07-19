@@ -8,6 +8,7 @@ import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.entity.paging.Paging;
 import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
+import com.exampleepam.restaurant.repository.ReviewRepository;
 import com.exampleepam.restaurant.util.FileUploadUtil;
 import com.exampleepam.restaurant.util.FolderDeleteUtil;
 import com.exampleepam.restaurant.util.ServiceUtil;
@@ -31,13 +32,16 @@ public class DishService {
     private final DishRepository dishRepository;
     private final DishMapper dishMapper;
     private final ServiceUtil serviceUtil;
+    private final ReviewRepository reviewRepository;
     private static final String CATEGORY_ALL = "all";
 
     @Autowired
-    public DishService(DishRepository dishRepository, DishMapper dishMapper, ServiceUtil serviceUtil) {
+    public DishService(DishRepository dishRepository, DishMapper dishMapper, ServiceUtil serviceUtil,
+                       ReviewRepository reviewRepository) {
         this.dishRepository = dishRepository;
         this.dishMapper = dishMapper;
         this.serviceUtil = serviceUtil;
+        this.reviewRepository = reviewRepository;
     }
 
     /**
@@ -68,7 +72,11 @@ public class DishService {
         }
 
         Page<DishResponseDto> dishResponseDtoPage = dishPage
-                .map(dishMapper::toDishResponseDto);
+                .map(dishMapper::toDishResponseDto)
+                .map(dto -> {
+                    setAverageRating(dto);
+                    return dto;
+                });
 
         return new Paged<>(dishResponseDtoPage, Paging.of(dishPage.getTotalPages(), currentPage, pageSize));
     }
@@ -114,7 +122,9 @@ public class DishService {
      */
     public DishResponseDto getDishById(long id) {
         Dish dish = dishRepository.getById(id);
-        return dishMapper.toDishResponseDto(dish);
+        DishResponseDto dto = dishMapper.toDishResponseDto(dish);
+        setAverageRating(dto);
+        return dto;
     }
 
     /**
@@ -130,7 +140,9 @@ public class DishService {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
         List<Dish> dishes = dishRepository.findDishesByCategory(
                 Category.valueOf(category.toUpperCase(Locale.ENGLISH)), sort);
-        return dishMapper.toDishResponseDtoList(dishes);
+        List<DishResponseDto> result = dishMapper.toDishResponseDtoList(dishes);
+        assignAverageRatings(result);
+        return result;
     }
 
     /**
@@ -143,7 +155,18 @@ public class DishService {
     public List<DishResponseDto> findAllDishesSorted(String sortField, String sortDir) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
         List<Dish> dishes = dishRepository.findAll(sort);
-        return dishMapper.toDishResponseDtoList(dishes);
+        List<DishResponseDto> result = dishMapper.toDishResponseDtoList(dishes);
+        assignAverageRatings(result);
+        return result;
+    }
+
+    private void assignAverageRatings(List<DishResponseDto> dishes) {
+        dishes.forEach(this::setAverageRating);
+    }
+
+    private void setAverageRating(DishResponseDto dto) {
+        Double avg = reviewRepository.getAverageRatingByDishId(dto.getId());
+        dto.setAverageRating(avg == null ? 0 : avg);
     }
 
     /**
