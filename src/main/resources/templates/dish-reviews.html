@@ -8,37 +8,67 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
         body {
-            background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-            url('../images/saveInPhotoshop.png') no-repeat center center;
+            background: linear-gradient(rgba(0, 0, 0, 0.93), rgba(0, 0, 0, 0.93)),
+            url('/images/saveInPhotoshop.png') no-repeat;
             background-size: cover;
         }
 
         .review-wrapper {
             max-width: 800px;
             margin: 40px auto;
-            background: #fff;
+            background: rgba(255,255,255,0.95);
             border-radius: 8px;
             padding: 2rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .review-card {
-            background: #f8f9fa;
+            position: relative;
+            background: #ffffff;
             border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #343a40;
+        }
+        .review-card::before {
+            content: "\201C";
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            font-family: Georgia, serif;
+            font-size: 3rem;
+            color: #343a40;
+            line-height: 1;
+        }
+        .review-date {
+            font-size: 0.85rem;
+            color: #6c757d;
         }
 
         .star-rating i { color: #FFD700; }
+
+        .pagination { justify-content: center; }
+        .pagination .page-link {
+            color: #343a40;
+            border-color: #343a40;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #343a40;
+            border-color: #343a40;
+            color: #fff;
+        }
+        .sort-select { width: auto; display: inline-block; }
     </style>
 </head>
 <body>
 <div th:replace="fragments/topnav :: navbar"></div>
 
+<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins" id="reviewsBackground">
+<div class="wrapper wrapper--w860">
 <div class="review-wrapper">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <a href="/menu" class="text-decoration-none text-dark">
+        <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}" class="text-decoration-none text-dark">
             <i class="fa fa-arrow-left me-2"></i>Back to menu
         </a>
         <h2 class="flex-grow-1 text-center m-0" th:text="${dish.name}">Dish Name</h2>
@@ -47,33 +77,81 @@
     <div class="text-center mb-3">
         <img th:if="${dish.imageFileName != null}" th:src="@{${dish.getimagePath()}}" class="img-fluid rounded" style="max-width:300px" alt="Dish image">
     </div>
-    <div class="text-center mb-4">
-        <div class="star-rating">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <div class="star-rating mb-2 mb-md-0">
             <span th:each="i : ${#numbers.sequence(1,5)}">
                 <i th:class="${dish.averageRating >= i ? 'fa fa-star' : 'fa fa-star-o'}"></i>
             </span>
             <span class="ms-2" th:text="${#numbers.formatDecimal(dish.averageRating,1,1)}"></span>
         </div>
+        <form id="sortForm" method="get">
+            <input type="hidden" name="page" value="1"/>
+            <input type="hidden" name="size" th:value="${pageSize}"/>
+            <input type="hidden" name="sortField" th:value="${sortField}"/>
+            <input type="hidden" name="sortDir" th:value="${sortDir}"/>
+            <input type="hidden" name="filterCategory" th:value="${filterCategory}"/>
+            <select name="sort" class="form-select sort-select" onchange="document.getElementById('sortForm').submit()">
+                <option value="new" th:selected="${reviewSort == 'new'}">Newest</option>
+                <option value="rating" th:selected="${reviewSort == 'rating'}">Rating high-low</option>
+            </select>
+        </form>
     </div>
 
-    <div th:if="${reviews.size() > 0}">
-        <div th:each="rev : ${reviews}" class="review-card">
+    <div th:if="${reviewPaged.page.content.size() > 0}">
+        <div th:each="rev : ${reviewPaged.page}" class="review-card">
             <div>
                 <span th:each="i : ${#numbers.sequence(1,5)}">
                     <i th:class="${rev.rating >= i ? 'fa fa-star text-warning' : 'fa fa-star-o text-warning'}"></i>
                 </span>
             </div>
             <p class="fw-bold mb-1" th:text="${rev.userName}">User Name</p>
+            <p class="review-date" th:text="${#temporals.format(rev.creationDateTime, 'dd MMM yyyy HH:mm')}"></p>
             <p th:if="${rev.comment != null and !#strings.isEmpty(rev.comment)}" class="mt-2 mb-0" th:text="${rev.comment}">Comment</p>
             <form sec:authorize="hasAuthority('ADMIN')" th:method="delete"
                   th:action="@{'/admin/reviews/' + ${rev.id} + '?dishId=' + ${dish.id}}" class="mt-2">
                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
             </form>
         </div>
+        <nav aria-label="Page navigation" th:if="${reviewPaged.paging.totalPages > 1}">
+            <ul class="pagination">
+                <li class="page-item" th:classappend="${!reviewPaged.paging.isPrevEnabled()? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="@{'/dishes/' + ${dish.id} + '/reviews?page=' + (${reviewPaged.paging.pageNumber - 1}) + '&size=' + ${pageSize} + '&sort=' + ${reviewSort} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}"
+                       tabindex="-1" th:text="#{pagination.previous}">Previous</a>
+                </li>
+                <th:block th:each="item : ${reviewPaged.paging.getItems()}">
+                    <li class="page-item"
+                        th:classappend="${item.index == reviewPaged.paging.pageNumber? 'active' : ''}"
+                        th:if="${item.pageItemType.name() == 'PAGE'}">
+                        <a class="page-link"
+                           th:href="@{'/dishes/' + ${dish.id} + '/reviews?page=' + ${item.index} + '&size=' + ${pageSize} + '&sort=' + ${reviewSort} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}"
+                           th:text="${item.index}"></a>
+                    </li>
+                    <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
+                        <a class="page-link" href="#">...</a>
+                    </li>
+                </th:block>
+                <li class="page-item" th:classappend="${!reviewPaged.paging.isNextEnabled()? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="@{'/dishes/' + ${dish.id} + '/reviews?page=' + (${reviewPaged.paging.pageNumber + 1}) + '&size=' + ${pageSize} + '&sort=' + ${reviewSort} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}"
+                       th:text="#{pagination.next}">Next</a>
+                </li>
+            </ul>
+        </nav>
     </div>
-    <div th:unless="${reviews.size() > 0}" class="text-center">
+    <div th:unless="${reviewPaged.page.content.size() > 0}" class="text-center">
         <p>No reviews for this dish yet.</p>
     </div>
 </div>
+</div>
+</div>
+<script>
+    document.getElementById('reviewsBackground').addEventListener('click', function (e) {
+        const container = document.querySelector('.review-wrapper');
+        if (container && !container.contains(e.target)) {
+            window.location.href = '/menu';
+        }
+    });
+</script>
 </body>
 </html>

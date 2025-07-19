@@ -12,6 +12,12 @@ import com.exampleepam.restaurant.mapper.ReviewMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
 import com.exampleepam.restaurant.repository.OrderRepository;
 import com.exampleepam.restaurant.repository.ReviewRepository;
+import com.exampleepam.restaurant.entity.paging.Paged;
+import com.exampleepam.restaurant.entity.paging.Paging;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import com.exampleepam.restaurant.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -116,6 +122,17 @@ public class ReviewService {
                 .stream()
                 .map(reviewMapper::toDto)
                 .toList();
+    }
+
+    public Paged<ReviewDto> getPaginatedReviewsForDish(Long dishId, int page, int size, String sort) {
+        Sort sortObj = switch (sort) {
+            case "rating" -> Sort.by(Sort.Direction.DESC, "rating");
+            default -> Sort.by(Sort.Direction.DESC, "creationDateTime");
+        };
+        Pageable pageable = PageRequest.of(page - 1, size, sortObj);
+        Page<Review> reviewPage = reviewRepository.findAllByDishId(dishId, pageable);
+        Page<ReviewDto> dtoPage = reviewPage.map(reviewMapper::toDto);
+        return new Paged<>(dtoPage, Paging.of(reviewPage.getTotalPages(), page, size));
     }
 
     public double getAverageRatingForDish(Long dishId) {
