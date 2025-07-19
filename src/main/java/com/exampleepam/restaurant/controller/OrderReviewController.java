@@ -32,6 +32,10 @@ public class OrderReviewController {
      */
     @GetMapping("/{orderId}/reviews")
     public String getReviewPage(@PathVariable("orderId") Long orderId, Model model) {
+        if (reviewService.isOrderReviewed(orderId)) {
+            return "redirect:/orders/history";
+        }
+
         // If you need to validate that this order belongs to the current user, do it here
 
         model.addAttribute("orderId", orderId);
@@ -49,6 +53,10 @@ public class OrderReviewController {
     public String submitOrderReviews(@PathVariable Long orderId,
                                      @ModelAttribute("reviewForm") ReviewForm form,
                                      @AuthenticationPrincipal AuthenticatedUser user) {
+        if (reviewService.isOrderReviewed(orderId)) {
+            return "redirect:/orders/history";
+        }
+
         reviewService.submitReviews(orderId, user.getUserId(), form.getReviews());
         log.info("order Id: {}, ", orderId);
         log.info("reviewForm: {}, ", form);

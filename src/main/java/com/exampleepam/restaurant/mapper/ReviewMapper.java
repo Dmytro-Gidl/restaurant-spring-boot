@@ -40,6 +40,9 @@ public class ReviewMapper {
         dto.setId(review.getId() == null ? 0 : review.getId());
         dto.setRating(review.getRating());
         dto.setComment(review.getComment());
+        if (review.getUser() != null) {
+            dto.setUserName(review.getUser().getName());
+        }
         return dto;
     }
 }

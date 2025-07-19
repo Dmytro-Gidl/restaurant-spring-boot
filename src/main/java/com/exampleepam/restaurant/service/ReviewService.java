@@ -79,6 +79,10 @@ public class ReviewService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found"));
 
+        if (order.isReviewed()) {
+            throw new IllegalStateException("Order already reviewed");
+        }
+
         reviews.forEach(reviewDto -> {
             Dish dish = dishRepository.findById(reviewDto.getId())
                     .orElseThrow(() -> new EntityNotFoundException("Dish not found"));
@@ -88,12 +92,23 @@ public class ReviewService {
             review.setOrder(order);
             reviewRepository.save(review);
         });
+        order.setReviewed(true);
+        orderRepository.save(order);
         log.info("Reviews has been saved: {}", reviews);
     }
 
     public boolean canAccessOrderReview(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new IllegalArgumentException("Order not found"));
         return order.getId().equals(userId);
+    }
+
+    /**
+     * Determine if the specified order has already been reviewed.
+     */
+    public boolean isOrderReviewed(Long orderId) {
+        return orderRepository.findById(orderId)
+                .map(Order::isReviewed)
+                .orElse(false);
     }
 
     public List<ReviewDto> getReviewsForDish(Long dishId) {

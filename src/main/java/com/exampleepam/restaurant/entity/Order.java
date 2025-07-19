@@ -51,6 +51,13 @@ public class Order extends AbstractBaseEntity {
     @JoinColumn(name = "order_id")
     private Review review;
 
+    /**
+     * Indicates whether the customer already submitted reviews for this order.
+     * Used to prevent multiple review submissions.
+     */
+    @Column(nullable = false)
+    private boolean reviewed = false;
+
     @OneToMany(
             mappedBy = "order",
             fetch = FetchType.EAGER,
@@ -74,7 +81,7 @@ public class Order extends AbstractBaseEntity {
 
     public Order(Long id, String address, LocalDateTime creationDateTime, LocalDateTime updateDateTime,
                  BigDecimal totalPrice, Status status, User user, Review review,
-                 List<OrderItem> orderItems) {
+                 List<OrderItem> orderItems, boolean reviewed) {
         this.id = id;
         this.address = address;
         this.creationDateTime = creationDateTime;
@@ -84,6 +91,7 @@ public class Order extends AbstractBaseEntity {
         this.user = user;
         this.review = review;
         this.orderItems = orderItems;
+        this.reviewed = reviewed;
     }
 
     public void addOrderItem(OrderItem orderItem) {

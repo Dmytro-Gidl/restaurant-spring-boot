@@ -55,6 +55,7 @@
                     <i th:class="${rev.rating >= i ? 'fa fa-star text-warning' : 'fa fa-star-o text-warning'}"></i>
                 </span>
             </div>
+            <p class="fw-bold mb-1" th:text="${rev.userName}">User Name</p>
             <p th:if="${rev.comment != null and !#strings.isEmpty(rev.comment)}" class="mt-2 mb-0" th:text="${rev.comment}">Comment</p>
             <form sec:authorize="hasAuthority('ADMIN')" th:method="delete"
                   th:action="@{'/admin/reviews/' + ${rev.id} + '?dishId=' + ${dish.id}}" class="mt-2">

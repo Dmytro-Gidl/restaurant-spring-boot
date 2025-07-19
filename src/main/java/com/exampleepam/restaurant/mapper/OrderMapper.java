@@ -57,7 +57,7 @@ public class OrderMapper {
         .totalPrice(order.getTotalPrice())
         .clientName(order.getUser().getName())
         .orderItems(orderedItemResponseDtos)
-        .isReviewed(order.getReview() != null)
+        .isReviewed(order.isReviewed())
         .build();
   }
 
