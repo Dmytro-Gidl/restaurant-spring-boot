@@ -84,19 +84,26 @@ public class AdminDishControllerTest {
         DishCreationDto dishCreationDto = getDishCreationDto();
 
 
-        MockMultipartFile notEmptyFile
-                = new MockMultipartFile(
-                "image",
-                "image.jpg",
+        MockMultipartFile file1 = new MockMultipartFile(
+                "images",
+                "image1.jpg",
                 MediaType.IMAGE_JPEG_VALUE,
-     "Simulate not empty file".getBytes()
+                "file1".getBytes()
+        );
+        MockMultipartFile file2 = new MockMultipartFile(
+                "images",
+                "image2.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "file2".getBytes()
         );
         mockMvc.perform(multipart("/admin/dishes")
-                        .file(notEmptyFile)
+                        .file(file1)
+                        .file(file2)
+                        .param("primaryIndex", "0")
                         .flashAttr("dish", dishCreationDto)
                         .with(csrf()))
                 .andExpect(redirectedUrl("/admin/dishes"));
-        Mockito.verify(dishService, Mockito.times(1)).saveWithFile(dishCreationDto, notEmptyFile);
+        Mockito.verify(dishService, Mockito.times(1)).saveWithFiles(Mockito.eq(dishCreationDto), Mockito.anyList());
     }
 
     @Test
@@ -136,13 +143,10 @@ public class AdminDishControllerTest {
                             rq.setMethod("PUT");
                             return rq;
                         });
-        var oldDish = getDishResponseDto();
         DishCreationDto dishCreationDto = getDishCreationDto();
-        Mockito.when(dishService.getDishById(3)).thenReturn(oldDish);
 
-        MockMultipartFile emptyFile
-                = new MockMultipartFile(
-                "image",
+        MockMultipartFile emptyFile = new MockMultipartFile(
+                "images",
                 "image.jpg",
                 MediaType.IMAGE_JPEG_VALUE,
                 new byte[0]
@@ -150,9 +154,12 @@ public class AdminDishControllerTest {
 
         mockMvc.perform(putMultipart
                         .file(emptyFile)
+                        .param("existingImages", "image.jpg")
+                        .param("primaryIndex", "0")
                         .flashAttr("dish", dishCreationDto)
                         .with(csrf()))
                 .andExpect(redirectedUrl("/admin/dishes"));
+        Mockito.verify(dishService, Mockito.times(1)).updateWithFiles(Mockito.eq(dishCreationDto), Mockito.anyList(), Mockito.anyMap(), Mockito.any());
     }
 
 }

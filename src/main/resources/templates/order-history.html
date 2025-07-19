@@ -94,10 +94,13 @@
 <div th:replace="fragments/topnav :: navbar"></div>
 
 <div class="container my-4">
-    <h1 class="mb-4 text-center" th:text="#{order.history.headline}">Your Order History</h1>
+    <h1 class="mb-4 text-center"
+        th:text="${orderList.page.content.size() == 0} ? 'No orders yet—your delicious journey awaits!' : #{order.history.headline}">
+        Your Order History
+    </h1>
 
     <!-- Dropdown for Cards per page -->
-    <div class="mb-3">
+    <div class="mb-3" th:if="${orderList.page.content.size() > 0}">
         <div class="dropdown">
             <a class="btn btn-outline-light dropdown-toggle" href="#" role="button" id="pageSizeDropdown"
                data-bs-toggle="dropdown" aria-expanded="false">
@@ -175,10 +178,6 @@
         </div>
     </div>
 
-    <!-- No Orders Message -->
-    <div class="text-center text-white" th:if="${orderList.page.content.size() == 0}">
-        <p>No orders found.</p>
-    </div>
 
     <!-- Pagination Controls -->
     <nav aria-label="Page navigation" class="mt-4" th:if="${orderList.paging.totalPages > 1}">
@@ -219,5 +218,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
         crossorigin="anonymous"></script>
+<script type="text/javascript" th:src="@{/js/button.js}"></script>
+<script th:inline="javascript">
+    if ([[${param.clearCart != null}]]) {
+        clearLocalStorage();
+    }
+</script>
 </body>
 </html>

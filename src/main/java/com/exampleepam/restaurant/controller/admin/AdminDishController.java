@@ -40,7 +40,8 @@ public class AdminDishController extends BaseController {
     private static final String REDIRECT_TO_ADMIN_DISHES = "redirect:/admin/dishes";
     private static final String DISH_UPDATE_PAGE = "dish-update";
     private static final String DISH_ADD_PAGE = "dish-add";
-    private static final String IMAGE_PARAM = "image";
+    private static final String IMAGE_PARAM = "images";
+    private static final String PRIMARY_INDEX_PARAM = "primaryIndex";
     private static final String DISHES_MANAGEMENT_PAGE = "dishes-management";
     private static final int DEFAULT_PAGE = 1;
     private static final String DEFAULT_SORT_FIELD = "category";
@@ -94,18 +95,26 @@ public class AdminDishController extends BaseController {
     @PostMapping
     public String saveNewDish(@Valid @ModelAttribute(DISH_ATTRIBUTE_NAME) DishCreationDto dishCreationDto,
                               BindingResult bindingResult,
-                              @RequestParam(IMAGE_PARAM) MultipartFile multipartFile,
+                              @RequestParam(IMAGE_PARAM) java.util.List<MultipartFile> multipartFiles,
+                              @RequestParam(value = PRIMARY_INDEX_PARAM, defaultValue = "0") int primaryIndex,
                               Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute(DISH_ATTRIBUTE_NAME, dishCreationDto);
             return DISH_ADD_PAGE;
         }
 
-        String originalFilename = multipartFile.getOriginalFilename();
-        if (!multipartFile.isEmpty() && originalFilename != null && !originalFilename.isBlank()) {
-            String fileName = StringUtils.cleanPath(originalFilename);
-            dishCreationDto.setImageFileName(fileName);
-            dishService.saveWithFile(dishCreationDto, multipartFile);
+        multipartFiles.removeIf(MultipartFile::isEmpty);
+        if (!multipartFiles.isEmpty()) {
+            java.util.List<String> fileNames = new java.util.ArrayList<>();
+            for (MultipartFile file : multipartFiles) {
+                fileNames.add(StringUtils.cleanPath(file.getOriginalFilename()));
+            }
+            if (primaryIndex < 0 || primaryIndex >= fileNames.size()) {
+                primaryIndex = 0;
+            }
+            dishCreationDto.setImageFileName(fileNames.get(primaryIndex));
+            dishCreationDto.setGalleryImageFileNames(fileNames);
+            dishService.saveWithFiles(dishCreationDto, multipartFiles);
         } else {
             dishService.save(dishCreationDto);
         }
@@ -122,7 +131,7 @@ public class AdminDishController extends BaseController {
             @RequestParam(PAGE_SIZE_PARAM) int pageSize,
             @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory
     ) {
-        dishService.archiveDishById(id);
+        dishService.deleteDishById(id);
 
 
         String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
@@ -139,7 +148,11 @@ public class AdminDishController extends BaseController {
     public String updateDish(
             @Valid @ModelAttribute(DISH_ATTRIBUTE_NAME) DishCreationDto dishCreationDto,
             BindingResult bindingResult,
-            @RequestParam(value = IMAGE_PARAM, required = false) MultipartFile multipartFile,
+            @RequestParam(value = IMAGE_PARAM, required = false) java.util.List<MultipartFile> multipartFiles,
+            @RequestParam(value = "existingImages", required = false) java.util.List<String> existingImages,
+            @RequestParam(value = "updateImages", required = false) java.util.List<MultipartFile> updateImages,
+            @RequestParam(value = "deleteImages", required = false) java.util.List<String> deleteImages,
+            @RequestParam(value = PRIMARY_INDEX_PARAM, defaultValue = "0") int primaryIndex,
             Model model
     ) {
         long dishId = dishCreationDto.getId();
@@ -151,21 +164,56 @@ public class AdminDishController extends BaseController {
             return DISH_UPDATE_PAGE;
         }
 
-        String originalFilename = multipartFile.getOriginalFilename();
-        if (!multipartFile.isEmpty() && originalFilename != null && !originalFilename.isBlank()) {
-            String fileName = StringUtils.cleanPath(originalFilename);
-            dishCreationDto.setImageFileName(fileName);
-            dishService.saveWithFile(dishCreationDto, multipartFile);
+        if (multipartFiles != null) {
+            multipartFiles.removeIf(MultipartFile::isEmpty);
         } else {
-            var oldDish = dishService.getDishById(dishId);
+            multipartFiles = new java.util.ArrayList<>();
+        }
 
-            if (oldDish != null) {
-                dishCreationDto.setImageFileName(oldDish.getImageFileName());
-                dishService.save(dishCreationDto);
-            } else {
-                log.debug("Admin tried to update a dish with id {}. But the dish was not found in DB", dishId);
+        if (updateImages == null) {
+            updateImages = new java.util.ArrayList<>();
+        }
+
+        java.util.List<String> originalExisting = existingImages == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(existingImages);
+
+        if (existingImages == null) {
+            existingImages = new java.util.ArrayList<>();
+        }
+
+        if (deleteImages != null) {
+            existingImages.removeAll(deleteImages);
+        }
+
+        java.util.Map<String, MultipartFile> replacements = new java.util.HashMap<>();
+        for (int i = 0; i < originalExisting.size() && i < updateImages.size(); i++) {
+            MultipartFile file = updateImages.get(i);
+            if (!file.isEmpty()) {
+                replacements.put(originalExisting.get(i), file);
             }
         }
+
+        java.util.List<String> newFileNames = new java.util.ArrayList<>();
+        for (MultipartFile file : multipartFiles) {
+            newFileNames.add(StringUtils.cleanPath(file.getOriginalFilename()));
+        }
+
+        java.util.List<String> allNames = new java.util.ArrayList<>(existingImages);
+        allNames.addAll(newFileNames);
+
+        if (allNames.isEmpty()) {
+            dishCreationDto.setImageFileName(null);
+            dishCreationDto.setGalleryImageFileNames(java.util.List.of());
+        } else {
+            if (primaryIndex < 0 || primaryIndex >= allNames.size()) {
+                primaryIndex = 0;
+            }
+            String primaryName = allNames.get(primaryIndex);
+            dishCreationDto.setImageFileName(primaryName);
+            allNames.remove(primaryName);
+            dishCreationDto.setGalleryImageFileNames(allNames);
+        }
+
+        dishService.updateWithFiles(dishCreationDto, multipartFiles, replacements, deleteImages);
 
         return REDIRECT_TO_ADMIN_DISHES;
     }

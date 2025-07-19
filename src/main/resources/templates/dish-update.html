@@ -36,10 +36,13 @@
 <body>
 <div th:replace="fragments/topnav :: navbar"></div>
 
-<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins">
+<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins" id="updateBackground">
     <div class="wrapper wrapper--w680">
         <div class="card card-4">
             <div class="card-body">
+                <a href="/menu" class="text-decoration-none text-dark mb-3 d-inline-block">
+                    <i class="fa fa-arrow-left me-2"></i>Go back to the menu
+                </a>
                 <h2 th:text="#{dish.update.form}" class="title">Dish update form</h2>
                 <form th:action="@{'/admin/dishes/'+ ${dish.id}}"
                       th:object="${dish}" enctype="multipart/form-data"
@@ -114,23 +117,36 @@
 
                     <div class="row row-space">
                         <div class="input-group d-flex flex-column">
-                            <!-- ROW -->
-
-                            <label th:text="#{dish.image}" for="image" class="form-label">Image</label>
-                            <div class="mb-3">
-                                <input
-                                        type="file"
-                                        class="form-control"
-                                        id="image"
-                                        name="image"
-                                        accept="image/png, image/jpeg"
-                                        aria-describedby="imageDescription"
-                                />
-                                <div th:text="#{dish.image.description}" id="imageDescription" class="form-text">
-                                    Image will be resized to 200 x 200 pixels
+                            <label th:text="#{dish.image}" for="image1" class="form-label">Images</label>
+                            <div th:with="names=${dish.getAllImageFileNames()}">
+                                <div class="mb-3" th:each="name,stat : ${names}">
+                                    <label class="form-label" th:text="'Image ' + (${stat.index + 1})"></label>
+                                    <img th:src="@{'/dish-images/' + ${dish.id} + '/' + ${name}}" width="120" class="mb-1"/>
+                                    <input type="hidden" name="existingImages" th:value="${name}" />
+                                    <div class="form-check form-check-inline ms-2">
+                                        <input class="form-check-input" type="checkbox" th:id="'del'+${stat.index}" name="deleteImages" th:value="${name}" />
+                                        <label class="form-check-label" th:for="'del'+${stat.index}">Delete</label>
+                                    </div>
+                                    <div class="form-check form-check-inline ms-2">
+                                        <input class="form-check-input" type="radio" th:id="'pri'+${stat.index}" name="primaryIndex" th:value="${stat.index}" th:checked="${name == dish.imageFileName}" />
+                                        <label class="form-check-label" th:for="'pri'+${stat.index}">Primary</label>
+                                    </div>
+                                    <input type="file" class="form-control mt-1" name="updateImages" accept="image/png, image/jpeg" />
+                                    <small class="form-text">Upload to replace image [[${stat.index + 1}]]</small>
+                                </div>
+                                <div class="mb-3" th:each="i : ${#numbers.sequence(1,4-names.size())}">
+                                    <label class="form-label" th:text="'Image ' + (${names.size() + i})"></label>
+                                    <input type="file" class="form-control" th:id="'image'+${i}" name="images"
+                                           accept="image/png, image/jpeg" aria-describedby="imageDescription" />
+                                    <div class="form-check form-check-inline ms-2">
+                                        <input class="form-check-input" type="radio" th:id="'newpri'+${i}" name="primaryIndex" th:value="${names.size()+i-1}" />
+                                        <label class="form-check-label" th:for="'newpri'+${i}">Primary</label>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- ROW -->
+                            <div th:text="#{dish.image.description}" id="imageDescription" class="form-text">
+                                Upload below an existing image to replace it. Images keep their original quality.
+                            </div>
                         </div>
                     </div>
                     <div class="p-t-15">
@@ -144,5 +160,13 @@
     </div>
 </div>
 
+<script>
+    document.getElementById('updateBackground').addEventListener('click', function(e) {
+        const card = document.querySelector('.card');
+        if(card && !card.contains(e.target)) {
+            window.location.href = '/menu';
+        }
+    });
+</script>
 </body>
 </html>

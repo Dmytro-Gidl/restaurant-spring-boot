@@ -1,7 +1,7 @@
 <!-- fragments/dishCard.html -->
 <div th:fragment="dishCard(dish)"
      class="single-menu"
-     th:attr="data-dish-id=${dish.id}, data-dish-name=${dish.name}, data-dish-price=${dish.price}">
+     th:attr="data-dish-id=${dish.id}, data-dish-name=${dish.name}, data-dish-price=${dish.price}, data-images=${dish.getImagePathsString()}">
     <img th:if="${dish.imageFileName != null}"
          th:src="@{${dish.getimagePath()}}"
          alt="Dish image"/>
@@ -21,7 +21,9 @@
             <span th:each="i : ${#numbers.sequence(1,5)}">
                 <i th:class="${dish.averageRating >= i ? 'fa fa-star text-warning' : 'fa fa-star-o text-warning'}"></i>
             </span>
-            <a th:href="@{'/dishes/' + ${dish.id} + '/reviews?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}" class="ms-2 link-light">Reviews</a>
+            <a th:href="@{'/dishes/' + ${dish.id} + '/reviews?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}"
+               class="ms-2 link-light"
+               th:text="${dish.reviewCount == 0 ? 'No Reviews' : dish.reviewCount + ' Reviews'}">Reviews</a>
         </div>
 
         <div class="myContainer m-1">
