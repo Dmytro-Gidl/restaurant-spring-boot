@@ -42,7 +42,7 @@
     <div class="text-center mb-4">
         <div class="star-rating">
             <span th:each="i : ${#numbers.sequence(1,5)}">
-                <i class="fa" th:class="${dish.averageRating >= i ? 'fa-star' : 'fa-star-o'}"></i>
+                <i th:class="${dish.averageRating >= i ? 'fa fa-star' : 'fa fa-star-o'}"></i>
             </span>
             <span class="ms-2" th:text="${#numbers.formatDecimal(dish.averageRating,1,1)}"></span>
         </div>
@@ -52,7 +52,7 @@
         <div th:each="rev : ${reviews}" class="review-card">
             <div>
                 <span th:each="i : ${#numbers.sequence(1,5)}">
-                    <i class="fa" th:class="${rev.rating >= i ? 'fa-star text-warning' : 'fa-star-o text-warning'}"></i>
+                    <i th:class="${rev.rating >= i ? 'fa fa-star text-warning' : 'fa fa-star-o text-warning'}"></i>
                 </span>
             </div>
             <p th:if="${rev.comment != null and !#strings.isEmpty(rev.comment)}" class="mt-2 mb-0" th:text="${rev.comment}">Comment</p>
