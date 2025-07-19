@@ -107,4 +107,11 @@ public class ReviewService {
         Double avg = reviewRepository.getAverageRatingByDishId(dishId);
         return avg == null ? 0 : avg;
     }
+
+    /**
+     * Delete a review by its id.
+     */
+    public void deleteReview(Long reviewId) {
+        reviewRepository.deleteById(reviewId);
+    }
 }

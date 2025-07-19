@@ -65,10 +65,10 @@ public class DishService {
         Page<Dish> dishPage;
 
         if (category.equals(CATEGORY_ALL)) {
-            dishPage = dishRepository.findAll(pageable);
+            dishPage = dishRepository.findAllByArchivedFalse(pageable);
         } else {
             dishPage = dishRepository
-                    .findPagedByCategory(Category.valueOf(category.toUpperCase(Locale.ENGLISH)), pageable);
+                    .findPagedByCategoryAndArchivedFalse(Category.valueOf(category.toUpperCase(Locale.ENGLISH)), pageable);
         }
 
         Page<DishResponseDto> dishResponseDtoPage = dishPage
@@ -138,7 +138,7 @@ public class DishService {
     public List<DishResponseDto> findDishesByCategorySorted(String sortField,
                                                             String sortDir, String category) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
-        List<Dish> dishes = dishRepository.findDishesByCategory(
+        List<Dish> dishes = dishRepository.findDishesByCategoryAndArchivedFalse(
                 Category.valueOf(category.toUpperCase(Locale.ENGLISH)), sort);
         List<DishResponseDto> result = dishMapper.toDishResponseDtoList(dishes);
         assignAverageRatings(result);
@@ -154,7 +154,7 @@ public class DishService {
      */
     public List<DishResponseDto> findAllDishesSorted(String sortField, String sortDir) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
-        List<Dish> dishes = dishRepository.findAll(sort);
+        List<Dish> dishes = dishRepository.findAllByArchivedFalse(sort);
         List<DishResponseDto> result = dishMapper.toDishResponseDtoList(dishes);
         assignAverageRatings(result);
         return result;
@@ -170,12 +170,15 @@ public class DishService {
     }
 
     /**
-     * Deletes a Dish by id
+     * Archive a Dish instead of deleting it. The dish images and reviews remain
+     * intact, but it will no longer be shown on the public menu.
      *
-     * @param id id of the Dish to be deleted
+     * @param id id of the Dish to be archived
      */
-    public void deleteDishById(long id) {
-        dishRepository.deleteById(id);
-        FolderDeleteUtil.deleteDishFolder(id);
+    public void archiveDishById(long id) {
+        dishRepository.findById(id).ifPresent(dish -> {
+            dish.setArchived(true);
+            dishRepository.save(dish);
+        });
     }
 }

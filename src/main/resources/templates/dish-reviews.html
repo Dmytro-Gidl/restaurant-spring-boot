@@ -56,6 +56,10 @@
                 </span>
             </div>
             <p th:if="${rev.comment != null and !#strings.isEmpty(rev.comment)}" class="mt-2 mb-0" th:text="${rev.comment}">Comment</p>
+            <form sec:authorize="hasAuthority('ADMIN')" th:method="delete"
+                  th:action="@{'/admin/reviews/' + ${rev.id} + '?dishId=' + ${dish.id}}" class="mt-2">
+                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+            </form>
         </div>
     </div>
     <div th:unless="${reviews.size() > 0}" class="text-center">
