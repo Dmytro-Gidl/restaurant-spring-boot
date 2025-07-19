@@ -89,24 +89,7 @@
             <span class="h2 font-weight-bold total-price">0</span>
             <span class="h4 currency">₴</span>
 
-            <div class="d-flex justify-content-center">
-                <div class="mb-3 text-center fw-bold col-8" style="font-size:1.5rem">
-                    <label th:text="#{menu.input.address}" for="address" class="form-label">Input your address</label>
-                    <th:block th:if="${#fields.hasAnyErrors()}" th:each="error : ${#fields.errors()}">
-                        <p class="1h-sm fs-6 text-danger" th:text="${error}"
-                           style="color: red; margin: 0;">Error</p>
-                    </th:block>
-                    <input type="text"
-                           th:classappend="${#fields.hasAnyErrors() ? 'is-invalid' : 'dummy'}"
-                           th:field="*{address}"
-                           class="form-control"
-                           id="address"
-                           required>
-                    <button th:text="#{menu.order.confirm}" type="submit" value="Submit"
-                            class="btn btn-outline-light mt-3 btn-lg">Confirm order
-                    </button>
-                </div>
-            </div>
+            <!-- Address input removed: users provide address on the checkout page -->
         </form>
     </div>
 </div>
