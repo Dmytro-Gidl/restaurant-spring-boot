@@ -1,6 +1,7 @@
 package com.exampleepam.restaurant.controller.admin;
 
 import com.exampleepam.restaurant.controller.BaseController;
+import com.exampleepam.restaurant.dto.dish.CategoryDto;
 import com.exampleepam.restaurant.dto.dish.DishCreationDto;
 import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.entity.paging.Paged;
@@ -86,6 +87,7 @@ public class AdminDishController extends BaseController {
     @GetMapping("/newDishForm")
     public String returnDishCreationForm(Model model) {
         model.addAttribute(DISH_ATTRIBUTE_NAME, new DishCreationDto());
+        model.addAttribute("categories", CategoryDto.values());
         return DISH_ADD_PAGE;
     }
 
@@ -145,6 +147,7 @@ public class AdminDishController extends BaseController {
         if (bindingResult.hasErrors()) {
 
             model.addAttribute(DISH_ATTRIBUTE_NAME, dishCreationDto);
+            model.addAttribute("categories", CategoryDto.values());
             return DISH_UPDATE_PAGE;
         }
 
@@ -179,6 +182,7 @@ public class AdminDishController extends BaseController {
             log.debug("Admin tried to update a dish with id {}. But the dish was not found in DB", id);
             return "redirect:/admin/orders";
         }
+        model.addAttribute("categories", CategoryDto.values());
         return DISH_UPDATE_PAGE;
     }
 }

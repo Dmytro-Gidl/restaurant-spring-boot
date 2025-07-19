@@ -103,7 +103,7 @@
                                 <div>
 
                                     <select th:field="*{category}" class="form-select" aria-label="Choose category">
-                                        <option th:each="category : ${T(com.exampleepam.restaurant.dto.CategoryDto).values()}"
+                                        <option th:each="category : ${categories}"
                                                 th:value="${category}" th:text="${category}"></option>
                                     </select>
 
