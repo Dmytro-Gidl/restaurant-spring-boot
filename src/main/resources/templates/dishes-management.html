@@ -112,8 +112,8 @@
                       th:method="delete"
                       th:action="@{'/admin/dishes/' + ${dish.id} + '/page/' + ${currentPage} + '?sortField=' + ${sortField}
                    + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
-                    <button th:text="#{dish.delete}"
-                            class="btn btn-danger" type="submit">Delete</button>
+                    <button th:text="#{dish.archive}"
+                            class="btn btn-danger" type="submit">Archive</button>
                 </form>
 
             </td>

@@ -29,6 +29,14 @@ public class Dish extends AbstractBaseEntity{
     BigDecimal price;
     private String imageFileName;
 
+    /**
+     * Indicates whether this dish is archived (soft-deleted). Archived dishes
+     * should not appear on the public menu but remain in the database together
+     * with their reviews.
+     */
+    @Column(nullable = false)
+    private boolean archived = false;
+
     public Dish(long id, String name, String description, Category category, BigDecimal price, String imagePath) {
         this.id = id;
         this.name = name;

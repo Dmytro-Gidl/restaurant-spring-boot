@@ -8,6 +8,7 @@ import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.entity.paging.Paging;
 import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
+import com.exampleepam.restaurant.repository.ReviewRepository;
 import com.exampleepam.restaurant.util.FileUploadUtil;
 import com.exampleepam.restaurant.util.FolderDeleteUtil;
 import com.exampleepam.restaurant.util.ServiceUtil;
@@ -31,13 +32,16 @@ public class DishService {
     private final DishRepository dishRepository;
     private final DishMapper dishMapper;
     private final ServiceUtil serviceUtil;
+    private final ReviewRepository reviewRepository;
     private static final String CATEGORY_ALL = "all";
 
     @Autowired
-    public DishService(DishRepository dishRepository, DishMapper dishMapper, ServiceUtil serviceUtil) {
+    public DishService(DishRepository dishRepository, DishMapper dishMapper, ServiceUtil serviceUtil,
+                       ReviewRepository reviewRepository) {
         this.dishRepository = dishRepository;
         this.dishMapper = dishMapper;
         this.serviceUtil = serviceUtil;
+        this.reviewRepository = reviewRepository;
     }
 
     /**
@@ -61,14 +65,18 @@ public class DishService {
         Page<Dish> dishPage;
 
         if (category.equals(CATEGORY_ALL)) {
-            dishPage = dishRepository.findAll(pageable);
+            dishPage = dishRepository.findAllByArchivedFalse(pageable);
         } else {
             dishPage = dishRepository
-                    .findPagedByCategory(Category.valueOf(category.toUpperCase(Locale.ENGLISH)), pageable);
+                    .findPagedByCategoryAndArchivedFalse(Category.valueOf(category.toUpperCase(Locale.ENGLISH)), pageable);
         }
 
         Page<DishResponseDto> dishResponseDtoPage = dishPage
-                .map(dishMapper::toDishResponseDto);
+                .map(dishMapper::toDishResponseDto)
+                .map(dto -> {
+                    setAverageRating(dto);
+                    return dto;
+                });
 
         return new Paged<>(dishResponseDtoPage, Paging.of(dishPage.getTotalPages(), currentPage, pageSize));
     }
@@ -114,7 +122,9 @@ public class DishService {
      */
     public DishResponseDto getDishById(long id) {
         Dish dish = dishRepository.getById(id);
-        return dishMapper.toDishResponseDto(dish);
+        DishResponseDto dto = dishMapper.toDishResponseDto(dish);
+        setAverageRating(dto);
+        return dto;
     }
 
     /**
@@ -128,9 +138,11 @@ public class DishService {
     public List<DishResponseDto> findDishesByCategorySorted(String sortField,
                                                             String sortDir, String category) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
-        List<Dish> dishes = dishRepository.findDishesByCategory(
+        List<Dish> dishes = dishRepository.findDishesByCategoryAndArchivedFalse(
                 Category.valueOf(category.toUpperCase(Locale.ENGLISH)), sort);
-        return dishMapper.toDishResponseDtoList(dishes);
+        List<DishResponseDto> result = dishMapper.toDishResponseDtoList(dishes);
+        assignAverageRatings(result);
+        return result;
     }
 
     /**
@@ -142,17 +154,31 @@ public class DishService {
      */
     public List<DishResponseDto> findAllDishesSorted(String sortField, String sortDir) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
-        List<Dish> dishes = dishRepository.findAll(sort);
-        return dishMapper.toDishResponseDtoList(dishes);
+        List<Dish> dishes = dishRepository.findAllByArchivedFalse(sort);
+        List<DishResponseDto> result = dishMapper.toDishResponseDtoList(dishes);
+        assignAverageRatings(result);
+        return result;
+    }
+
+    private void assignAverageRatings(List<DishResponseDto> dishes) {
+        dishes.forEach(this::setAverageRating);
+    }
+
+    private void setAverageRating(DishResponseDto dto) {
+        Double avg = reviewRepository.getAverageRatingByDishId(dto.getId());
+        dto.setAverageRating(avg == null ? 0 : avg);
     }
 
     /**
-     * Deletes a Dish by id
+     * Archive a Dish instead of deleting it. The dish images and reviews remain
+     * intact, but it will no longer be shown on the public menu.
      *
-     * @param id id of the Dish to be deleted
+     * @param id id of the Dish to be archived
      */
-    public void deleteDishById(long id) {
-        dishRepository.deleteById(id);
-        FolderDeleteUtil.deleteDishFolder(id);
+    public void archiveDishById(long id) {
+        dishRepository.findById(id).ifPresent(dish -> {
+            dish.setArchived(true);
+            dishRepository.save(dish);
+        });
     }
 }

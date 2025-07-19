@@ -5,18 +5,10 @@
     <meta
             name="viewport"
             content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
+    <!-- Use FontAwesome 4.7 for consistent star icons across pages -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <title>Review Order</title>
 
-    <!--
-      Use Font Awesome 4.7 from cdnjs
-      so fa-star-o / fa-star are recognized.
-    -->
-    <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-    />
 
     <!-- Optional Google Font -->
     <link
@@ -101,7 +93,7 @@
            - unselected: lighter yellow (#FBC02D)
            - hovered/selected: gold (#FFD700)
         */
-        .star-rating .fa {
+        .star-rating i {
             font-size: 1.8rem;
             color: #FBC02D; /* unselected base color */
             cursor: pointer;
@@ -212,7 +204,7 @@
 <script>
     // For each dish-row, handle star rating
     document.querySelectorAll('.dish-row').forEach(dishRow => {
-        const stars = dishRow.querySelectorAll('.star-rating .fa-star-o');
+        const stars = dishRow.querySelectorAll('.star-rating .fa-star-o, .star-rating .fa-star');
         const ratingInput = dishRow.querySelector('input[name*="rating"]');
 
         stars.forEach(star => {
@@ -255,10 +247,8 @@
     function resetStars(stars) {
         stars.forEach(star => {
             star.classList.remove('fa-star', 'selected');
+            star.classList.add('fa-star-o');
             star.style.color = '#FBC02D';  // revert to unselected color
-            if (!star.classList.contains('fa-star-o')) {
-                star.classList.add('fa-star-o');
-            }
         });
     }
 </script>
