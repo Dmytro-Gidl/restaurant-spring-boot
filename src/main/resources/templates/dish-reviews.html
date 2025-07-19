@@ -67,24 +67,26 @@
 <div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins" id="reviewsBackground">
 <div class="wrapper wrapper--w860">
 <div class="review-wrapper">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}" class="text-decoration-none text-dark">
+    <div class="position-relative mb-3 text-center">
+        <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}"
+           class="text-decoration-none text-dark position-absolute start-0">
             <i class="fa fa-arrow-left me-2"></i>Back to menu
         </a>
-        <h2 class="flex-grow-1 text-center m-0" th:text="${dish.name}">Dish Name</h2>
-        <span class="flex-grow-1"></span>
+        <h2 class="m-0" th:text="${dish.name}">Dish Name</h2>
     </div>
     <div class="text-center mb-3">
         <img th:if="${dish.imageFileName != null}" th:src="@{${dish.getimagePath()}}" class="img-fluid rounded" style="max-width:300px" alt="Dish image">
     </div>
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <div class="star-rating mb-2 mb-md-0">
+    <div class="d-flex align-items-center mb-4">
+        <div class="flex-grow-1 text-center">
+            <div class="star-rating mb-2">
             <span th:each="i : ${#numbers.sequence(1,5)}">
                 <i th:class="${dish.averageRating >= i ? 'fa fa-star' : 'fa fa-star-o'}"></i>
             </span>
             <span class="ms-2" th:text="${#numbers.formatDecimal(dish.averageRating,1,1)}"></span>
+            </div>
         </div>
-        <form id="sortForm" method="get">
+        <form id="sortForm" method="get" th:if="${reviewPaged.page.content.size() > 0}" class="ms-2">
             <input type="hidden" name="page" value="1"/>
             <input type="hidden" name="size" th:value="${pageSize}"/>
             <input type="hidden" name="sortField" th:value="${sortField}"/>
@@ -140,7 +142,7 @@
         </nav>
     </div>
     <div th:unless="${reviewPaged.page.content.size() > 0}" class="text-center">
-        <p>No reviews for this dish yet.</p>
+        <p class="fs-4">No reviews yet, be first to order and review!</p>
     </div>
 </div>
 </div>

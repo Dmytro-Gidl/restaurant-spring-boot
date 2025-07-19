@@ -39,7 +39,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class OrderController extends BaseController {
 
   private static final String REDIRECT_TO_ORDERS_HISTORY = "redirect:/orders/history";
+  private static final String REDIRECT_TO_ORDERS_HISTORY_CLEAR =
+      "redirect:/orders/history?clearCart";
   private static final String ORDER_HISTORY_PAGE = "order-history";
+  private static final String CHECKOUT_PAGE = "checkout";
   private static final String ORDER_STATUS_ATTRIBUTE_NAME = "status";
   private static final String INSUFFICIENT_FUNDS_EXCEPTION_ERROR_CODE = "insufficient.funds.exception";
   private static final int STARTING_PAGE_NUMBER = 1;
@@ -79,8 +82,8 @@ public class OrderController extends BaseController {
       HttpSession session, Model model) {
 
     if (bindingResult.hasErrors()) {
-      fillMenuModelWithData(model);
-      return MENU_PAGE;
+      model.addAttribute("googleApiKey", googleMapsApiKey);
+      return CHECKOUT_PAGE;
     }
 
     Map<Long, Integer> orders = filterItemsWithoutOrders(order);
@@ -93,18 +96,19 @@ public class OrderController extends BaseController {
       log.debug(String.format("User with email %s tried to order, but balance was too low.",
           authenticatedUser.getUsername()), e);
 
-      fillMenuModelWithData(model);
+      model.addAttribute("googleApiKey", googleMapsApiKey);
       bindingResult.reject(INSUFFICIENT_FUNDS_EXCEPTION_ERROR_CODE);
-      return MENU_PAGE;
+      return CHECKOUT_PAGE;
     } catch (EntityNotFoundException e) {
       log.info(
           String.format("User with email %s tried to order, but one of items was not found in DB.",
               authenticatedUser.getUsername()), e);
       bindingResult.reject("dish.absent.exception");
-      return MENU_PAGE;
+      model.addAttribute("googleApiKey", googleMapsApiKey);
+      return CHECKOUT_PAGE;
     }
 
-    return REDIRECT_TO_ORDERS_HISTORY;
+    return REDIRECT_TO_ORDERS_HISTORY_CLEAR;
   }
 
   @GetMapping("/history")

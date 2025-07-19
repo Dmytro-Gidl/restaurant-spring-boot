@@ -73,7 +73,7 @@
 
     <!--MENU-->
     <div th:if="${dishList.size() > 0}">
-        <form onsubmit="clearLocalStorage()"
+        <form
               th:action="@{/orders}"
               th:object="${orderCreationDto}"
               method="post">
@@ -112,6 +112,12 @@
     <button class="checkout-btn" onclick="proceedToCheckout()">Checkout</button>
 </div>
 
+<div id="imageOverlay" class="image-overlay" style="display:none" onclick="hideOverlay()">
+    <button id="overlayPrev" class="overlay-nav" onclick="event.stopPropagation()">&lt;</button>
+    <div id="overlayContent" onclick="event.stopPropagation()"></div>
+    <button id="overlayNext" class="overlay-nav" onclick="event.stopPropagation()">&gt;</button>
+</div>
+
 <script>
     function proceedToCheckout() {
         window.location.href = '/orders/checkout';
@@ -120,5 +126,6 @@
 
 <script type="text/javascript" th:src="@{/js/button.js}"></script>
 <script type="text/javascript" th:src="@{/js/menu-scroll.js}"></script>
+<script type="text/javascript" th:src="@{/js/image-overlay.js}"></script>
 </body>
 </html>

@@ -24,6 +24,7 @@ public class DishCreationDto {
 
   private long id;
   private String imageFileName;
+  private java.util.List<String> galleryImageFileNames;
   @NotBlank(message = "{fail.dish.blank.name}")
   @Size(min = 4, max = 30, message = "{fail.dish.size.name}")
   private String name;

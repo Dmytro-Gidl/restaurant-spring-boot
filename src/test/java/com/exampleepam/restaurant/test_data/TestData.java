@@ -73,19 +73,19 @@ public class TestData {
   public static DishResponseDto getDishResponseDto() {
     return new DishResponseDto(2, "Dish1",
         "Description of Dish1", CategoryDto.DRINKS,
-        BigDecimal.TEN, "image", 0);
+        BigDecimal.TEN, "image", java.util.List.of("image"), 0, 0);
   }
 
   public static List<DishResponseDto> getDishResponseDtos() {
     DishResponseDto dishResponseDto1 = new DishResponseDto(2, "Dish1",
         "Description of Dish1", CategoryDto.DRINKS,
-        BigDecimal.TEN, "image", 0);
+        BigDecimal.TEN, "image", java.util.List.of("image"), 0, 0);
     DishResponseDto dishResponseDto2 = new DishResponseDto(3, "Dish2",
         "Description of Dish2", CategoryDto.SNACKS,
-        BigDecimal.valueOf(25), "image2", 0);
+        BigDecimal.valueOf(25), "image2", java.util.List.of("image2"), 0, 0);
     DishResponseDto dishResponseDto3 = new DishResponseDto(3, "Dish3",
         "Description of Dish3", CategoryDto.SNACKS,
-        BigDecimal.valueOf(45), "image3", 0);
+        BigDecimal.valueOf(45), "image3", java.util.List.of("image3"), 0, 0);
     return Arrays.asList(dishResponseDto1, dishResponseDto2, dishResponseDto3);
   }
 
@@ -126,7 +126,7 @@ public class TestData {
 
   // DishCreationDto
   public static DishCreationDto getDishCreationDto() {
-    return new DishCreationDto(2, "image", "DishCreationName",
+    return new DishCreationDto(2, "image", java.util.List.of("image"), "DishCreationName",
         "DishDescription", CategoryDto.DRINKS, BigDecimal.valueOf(213));
   }
 
