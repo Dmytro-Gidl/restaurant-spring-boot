@@ -19,7 +19,7 @@
 
         <div class="star-display mb-2">
             <span th:each="i : ${#numbers.sequence(1,5)}">
-                <i th:class="${dish.averageRating >= i ? 'fas fa-star text-warning' : 'far fa-star text-warning'}"></i>
+                <i th:class="${dish.averageRating >= i ? 'fa fa-star text-warning' : 'fa fa-star-o text-warning'}"></i>
             </span>
             <a th:href="@{/dishes/{id}/reviews(id=${dish.id})}" class="ms-2 link-light">Reviews</a>
         </div>
