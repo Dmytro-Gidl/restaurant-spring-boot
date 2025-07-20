@@ -1,7 +1,7 @@
 package com.exampleepam.restaurant.service;
 
-import com.exampleepam.restaurant.dto.OrderCreationDto;
-import com.exampleepam.restaurant.dto.OrderResponseDto;
+import com.exampleepam.restaurant.dto.order.OrderCreationDto;
+import com.exampleepam.restaurant.dto.order.OrderResponseDto;
 import com.exampleepam.restaurant.entity.Dish;
 import com.exampleepam.restaurant.entity.Order;
 import com.exampleepam.restaurant.entity.Status;
@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.exampleepam.restaurant.exception.ExceptionManager.*;
@@ -38,18 +39,18 @@ import static com.exampleepam.restaurant.exception.ExceptionManager.*;
  */
 @Service
 public class OrderService {
-    OrderRepository orderRepository;
-    OrderMapper orderMapper;
-    UserRepository userRepository;
-    DishRepository dishRepository;
-    UserService userService;
-    ServiceUtil serviceUtil;
-
-
+    private static final long DEAFULT_USER_ID = 0L;
     private static final String STATUS_ALL = "all";
     private static final String STATUS_ACTIVE = "active";
     private static final List<Status> ACTIVE_STATUS_LIST = Arrays.asList(Status.PENDING,
             Status.COOKING, Status.DELIVERING);
+
+    private final OrderRepository orderRepository;
+    private final OrderMapper orderMapper;
+    private final UserRepository userRepository;
+    private final DishRepository dishRepository;
+    private final UserService userService;
+    private final ServiceUtil serviceUtil;
 
     public OrderService(OrderRepository orderRepository, OrderMapper orderMapper,
                         UserRepository userRepository, DishRepository dishRepository,
@@ -153,7 +154,7 @@ public class OrderService {
 
     private Page<OrderResponseDto> toDtoPage(Page<Order> orderPage) {
         return orderPage
-                .map(order -> orderMapper.toOrderResponseDto(order));
+                .map(orderMapper::toOrderResponseDto);
     }
 
     /**
@@ -174,6 +175,49 @@ public class OrderService {
         throwExceptionIfMoneyInsufficient(user, order);
         withdrawOrderCostFromBalance(user, order);
         orderRepository.save(order);
+    }
+
+    /**
+     * Change the order's status to 'DECLINED' and refund order's total cost the user
+     *
+     * @param id  Order's id
+     * @throws javax.persistence.EntityNotFoundException if order does not exist
+     */
+    @Transactional
+    public void setStatusDeclinedAndRefund(long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> getNotFoundException(EntityType.ORDER, id));
+        order.setStatus(Status.DECLINED);
+
+        BigDecimal orderCost = order.getTotalPrice();
+        long userId = userRepository.getUserIdByOrderId(id);
+        userService.addUserBalance(userId, orderCost);
+    }
+
+    public long getUserIdByOrderId(long id) {
+        Optional<Order> order = orderRepository.findById(id);
+        return order.map(value -> value.getUser().getId()).orElse(DEAFULT_USER_ID);
+    }
+
+    /**
+     * Change the order's status to next by enum ordinal
+     *
+     * @param id  Order's id
+     * @throws javax.persistence.EntityNotFoundException if order does not exist
+     * @throws com.exampleepam.restaurant.exception.UnauthorizedActionException if it is an attempt to change
+     * status of a 'DECLINED' or 'COMPLETED' order
+     */
+    @Transactional
+    public void setNextStatus(long id) {
+        Order order = orderRepository.findById(id).orElseThrow(() ->
+                getNotFoundException(EntityType.ORDER, id));
+        Status status = order.getStatus();
+        if (status.equals(Status.DECLINED) || status.equals(Status.COMPLETED)) {
+            throw getUnauthorizedActionException("Completed and Declined statuses cannot be changed");
+        }
+        Status nextStatus = Status.values()[status.ordinal() + 1];
+        order.setStatus(nextStatus);
+        order.setUpdateDateTime(LocalDateTime.now());
     }
 
     private void throwExceptionIfMoneyInsufficient(User user, Order order) {
@@ -197,43 +241,4 @@ public class OrderService {
                         -> ExceptionManager.getNotFoundException(EntityType.DISH, e.getKey())),
                 Map.Entry::getValue));
     }
-
-    /**
-     * Change the order's status to 'DECLINED' and refund order's total cost the user
-     *
-     * @param id  Order's id
-     * @throws javax.persistence.EntityNotFoundException if order does not exist
-     */
-    @Transactional
-    public void setStatusDeclinedAndRefund(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> getNotFoundException(EntityType.ORDER, id));
-        order.setStatus(Status.DECLINED);
-
-        BigDecimal orderCost = order.getTotalPrice();
-        long userId = userRepository.getUserIdByOrderId(id);
-        userService.addUserBalance(userId, orderCost);
-    }
-    /**
-     * Change the order's status to next by enum ordinal
-     *
-     * @param id  Order's id
-     * @throws javax.persistence.EntityNotFoundException if order does not exist
-     * @throws com.exampleepam.restaurant.exception.UnauthorizedActionException if it is an attempt to change
-     * status of a 'DECLINED' or 'COMPLETED' order
-     */
-    @Transactional
-    public void setNextStatus(long id) {
-        Order order = orderRepository.findById(id).orElseThrow(() ->
-                getNotFoundException(EntityType.ORDER, id));
-        Status status = order.getStatus();
-        if (status.equals(Status.DECLINED) || status.equals(Status.COMPLETED)) {
-            throw getUnauthorizedActionException("Completed and Declined statuses cannot be changed");
-        }
-        Status nextStatus = Status.values()[status.ordinal() + 1];
-        order.setStatus(nextStatus);
-        order.setUpdateDateTime(LocalDateTime.now());
-    }
-
-
 }

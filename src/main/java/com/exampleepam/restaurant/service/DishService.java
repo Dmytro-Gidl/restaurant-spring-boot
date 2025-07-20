@@ -1,13 +1,14 @@
 package com.exampleepam.restaurant.service;
 
-import com.exampleepam.restaurant.dto.DishCreationDto;
-import com.exampleepam.restaurant.dto.DishResponseDto;
+import com.exampleepam.restaurant.dto.dish.DishCreationDto;
+import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.entity.Category;
 import com.exampleepam.restaurant.entity.Dish;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.entity.paging.Paging;
 import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
+import com.exampleepam.restaurant.repository.ReviewRepository;
 import com.exampleepam.restaurant.util.FileUploadUtil;
 import com.exampleepam.restaurant.util.FolderDeleteUtil;
 import com.exampleepam.restaurant.util.ServiceUtil;
@@ -28,16 +29,19 @@ import java.util.Locale;
  */
 @Service
 public class DishService {
-    DishRepository dishRepository;
-    DishMapper dishMapper;
-    ServiceUtil serviceUtil;
+    private final DishRepository dishRepository;
+    private final DishMapper dishMapper;
+    private final ServiceUtil serviceUtil;
+    private final ReviewRepository reviewRepository;
     private static final String CATEGORY_ALL = "all";
 
     @Autowired
-    public DishService(DishRepository dishRepository, DishMapper dishMapper, ServiceUtil serviceUtil) {
+    public DishService(DishRepository dishRepository, DishMapper dishMapper, ServiceUtil serviceUtil,
+                       ReviewRepository reviewRepository) {
         this.dishRepository = dishRepository;
         this.dishMapper = dishMapper;
         this.serviceUtil = serviceUtil;
+        this.reviewRepository = reviewRepository;
     }
 
     /**
@@ -60,20 +64,24 @@ public class DishService {
 
         Page<Dish> dishPage;
 
-        if (category.equals(CATEGORY_ALL)) {
-            dishPage = dishRepository.findAll(pageable);
+        if (category.equals("archived")) {
+            dishPage = dishRepository.findAllByArchivedTrue(pageable);
+        } else if (category.equals(CATEGORY_ALL)) {
+            dishPage = dishRepository.findAllByArchivedFalse(pageable);
         } else {
             dishPage = dishRepository
-                    .findPagedByCategory(Category.valueOf(category.toUpperCase(Locale.ENGLISH)), pageable);
+                    .findPagedByCategoryAndArchivedFalse(Category.valueOf(category.toUpperCase(Locale.ENGLISH)), pageable);
         }
 
         Page<DishResponseDto> dishResponseDtoPage = dishPage
-                .map(dish -> dishMapper.toDishResponseDto(dish));
+                .map(dishMapper::toDishResponseDto)
+                .map(dto -> {
+                    setAverageRating(dto);
+                    return dto;
+                });
 
         return new Paged<>(dishResponseDtoPage, Paging.of(dishPage.getTotalPages(), currentPage, pageSize));
-
     }
-
 
     /**
      * Saves a Dish
@@ -93,19 +101,68 @@ public class DishService {
      * @param multipartFile   image to be saved
      * @return persisted dish id
      */
-    public long saveWithFile(DishCreationDto dishCreationDto, MultipartFile multipartFile) {
+    public long saveWithFiles(DishCreationDto dishCreationDto, java.util.List<MultipartFile> multipartFiles) {
         Dish dish = dishMapper.toDish(dishCreationDto);
-        String fileName = dish.getImageFileName();
         long persistedDishId = dishRepository.save(dish).getId();
         String uploadDir = "dish-images/" + persistedDishId;
         try {
             FolderDeleteUtil.deleteDishFolder(persistedDishId);
-            FileUploadUtil.saveFile(uploadDir, fileName, multipartFile);
+            java.util.List<String> fileNames = dishCreationDto.getGalleryImageFileNames();
+            for (int i = 0; i < multipartFiles.size(); i++) {
+                MultipartFile file = multipartFiles.get(i);
+                if (file.isEmpty()) continue;
+                String fileName = fileNames.get(i);
+                FileUploadUtil.saveFile(uploadDir, fileName, file);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
         return persistedDishId;
 
+    }
+
+    /**
+     * Updates existing dish and processes image additions/removals.
+     */
+    public void updateWithFiles(DishCreationDto dto, java.util.List<MultipartFile> newFiles,
+                                java.util.Map<String, MultipartFile> replaceFiles,
+                                java.util.List<String> deleteFileNames) {
+        Dish dish = dishMapper.toDish(dto);
+        dishRepository.save(dish);
+        String uploadDir = "dish-images/" + dish.getId();
+        try {
+            if (deleteFileNames != null) {
+                for (String name : deleteFileNames) {
+                    java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get(uploadDir).resolve(name));
+                }
+            }
+            if (replaceFiles != null) {
+                for (var entry : replaceFiles.entrySet()) {
+                    MultipartFile file = entry.getValue();
+                    if (file.isEmpty()) continue;
+                    FileUploadUtil.saveFile(uploadDir, entry.getKey(), file);
+                }
+            }
+            if (newFiles != null) {
+                for (MultipartFile file : newFiles) {
+                    if (file.isEmpty()) continue;
+                    String fileName = org.springframework.util.StringUtils.cleanPath(file.getOriginalFilename());
+                    FileUploadUtil.saveFile(uploadDir, fileName, file);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Legacy method for backward compatibility when only one file was supported.
+     */
+    public long saveWithFile(DishCreationDto dto, MultipartFile file) {
+        java.util.List<MultipartFile> list = new java.util.ArrayList<>();
+        list.add(file);
+        dto.setGalleryImageFileNames(java.util.List.of(dto.getImageFileName()));
+        return saveWithFiles(dto, list);
     }
 
     /**
@@ -116,7 +173,10 @@ public class DishService {
      */
     public DishResponseDto getDishById(long id) {
         Dish dish = dishRepository.getById(id);
-        return dishMapper.toDishResponseDto(dish);
+        DishResponseDto dto = dishMapper.toDishResponseDto(dish);
+        setAverageRating(dto);
+        setReviewCount(dto);
+        return dto;
     }
 
     /**
@@ -130,9 +190,12 @@ public class DishService {
     public List<DishResponseDto> findDishesByCategorySorted(String sortField,
                                                             String sortDir, String category) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
-        List<Dish> dishes = dishRepository.findDishesByCategory(
+        List<Dish> dishes = dishRepository.findDishesByCategoryAndArchivedFalse(
                 Category.valueOf(category.toUpperCase(Locale.ENGLISH)), sort);
-        return dishMapper.toDishResponseDtoList(dishes);
+        List<DishResponseDto> result = dishMapper.toDishResponseDtoList(dishes);
+        assignAverageRatings(result);
+        assignReviewCounts(result);
+        return result;
     }
 
     /**
@@ -144,16 +207,65 @@ public class DishService {
      */
     public List<DishResponseDto> findAllDishesSorted(String sortField, String sortDir) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
-        List<Dish> dishes = dishRepository.findAll(sort);
-        return dishMapper.toDishResponseDtoList(dishes);
+        List<Dish> dishes = dishRepository.findAllByArchivedFalse(sort);
+        List<DishResponseDto> result = dishMapper.toDishResponseDtoList(dishes);
+        assignAverageRatings(result);
+        assignReviewCounts(result);
+        return result;
+    }
+
+    private void assignAverageRatings(List<DishResponseDto> dishes) {
+        dishes.forEach(this::setAverageRating);
+    }
+
+    private void assignReviewCounts(List<DishResponseDto> dishes) {
+        dishes.forEach(this::setReviewCount);
+    }
+
+    private void setAverageRating(DishResponseDto dto) {
+        Double avg = reviewRepository.getAverageRatingByDishId(dto.getId());
+        dto.setAverageRating(avg == null ? 0 : avg);
+    }
+
+    private void setReviewCount(DishResponseDto dto) {
+        Long count = reviewRepository.countByDishId(dto.getId());
+        dto.setReviewCount(count == null ? 0 : count);
     }
 
     /**
-     * Deletes a Dish by id
+     * Archive a Dish instead of deleting it. The dish images and reviews remain
+     * intact, but it will no longer be shown on the public menu.
      *
-     * @param id id of the Dish to be deleted
+     * @param id id of the Dish to be archived
+     */
+    public void archiveDishById(long id) {
+        dishRepository.findById(id).ifPresent(dish -> {
+            dish.setArchived(true);
+            dishRepository.save(dish);
+        });
+    }
+
+    /**
+     * Alias for archiveDishById used by tests.
      */
     public void deleteDishById(long id) {
+        archiveDishById(id);
+    }
+
+    /**
+     * Restore an archived Dish so it appears on the menu again.
+     */
+    public void restoreDishById(long id) {
+        dishRepository.findById(id).ifPresent(dish -> {
+            dish.setArchived(false);
+            dishRepository.save(dish);
+        });
+    }
+
+    /**
+     * Permanently delete a Dish and its files.
+     */
+    public void hardDeleteDish(long id) {
         dishRepository.deleteById(id);
         FolderDeleteUtil.deleteDishFolder(id);
     }

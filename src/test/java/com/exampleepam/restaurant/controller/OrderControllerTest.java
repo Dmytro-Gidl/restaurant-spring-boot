@@ -1,9 +1,6 @@
 package com.exampleepam.restaurant.controller;
 
 import com.exampleepam.restaurant.ControllerConfiguration;
-import com.exampleepam.restaurant.dto.DishResponseDto;
-import com.exampleepam.restaurant.entity.paging.Paged;
-import com.exampleepam.restaurant.entity.paging.Paging;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.security.MyUserDetailsService;
 import com.exampleepam.restaurant.service.DishService;
@@ -11,15 +8,11 @@ import com.exampleepam.restaurant.service.OrderService;
 import com.exampleepam.restaurant.service.UserService;
 import com.exampleepam.restaurant.test_data.TestData;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -27,7 +20,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.ui.Model;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 
 import static com.exampleepam.restaurant.test_data.TestData.*;
 import static org.mockito.Mockito.times;

@@ -1,6 +1,5 @@
 package com.exampleepam.restaurant.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -8,18 +7,19 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * Security configuration class
  */
 @EnableWebSecurity
 public class SercurityConfig extends WebSecurityConfigurerAdapter {
-    MyUserDetailsService myUserDetailsService;
 
-    @Autowired
-    public SercurityConfig(MyUserDetailsService myUserDetailsService ) {
+    private final MyUserDetailsService myUserDetailsService;
+    private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
+
+    public SercurityConfig(MyUserDetailsService myUserDetailsService, CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler) {
         this.myUserDetailsService = myUserDetailsService;
+        this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
     }
 
     @Override
@@ -33,10 +33,11 @@ public class SercurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .formLogin().loginPage("/login")
                 .usernameParameter("email")
+                .successHandler(customAuthenticationSuccessHandler)
                 .permitAll()
                 .and()
                 .logout()
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
+                .logoutUrl("/logout")
                 .and()
                 .rememberMe().userDetailsService(myUserDetailsService);
 

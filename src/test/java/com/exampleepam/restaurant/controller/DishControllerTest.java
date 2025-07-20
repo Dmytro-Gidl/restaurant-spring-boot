@@ -47,23 +47,27 @@ public class DishControllerTest {
         String sortField = "name";
         String sortDir = "asc";
         String filterCategory = "all";
+        int pageNo = 1;
+        int pageSize = 6;
 
         var mockRequest =
                 MockMvcRequestBuilders.get("/menu")
                         .param("sortField", sortField)
                         .param("sortDir", sortDir)
                         .param("filterCategory", filterCategory)
+                        .param("pageNo", String.valueOf(pageNo))
+                        .param("pageSize", String.valueOf(pageSize))
                         .with(csrf());
 
-        Mockito.when(dishService.findDishesByCategorySorted(sortField, sortDir, filterCategory))
-                .thenReturn(getDishResponseDtos());
+        Mockito.when(dishService.findPaginated(pageNo, pageSize, sortField, sortDir, filterCategory))
+                .thenReturn(getDishResponseDtosPaged());
         Mockito.when(userService.getUserBalance(1)).thenReturn(BigDecimal.valueOf(2321));
 
         mockMvc.perform(mockRequest)
                 .andExpect(status().isOk())
                 .andExpect(view().name("menu"))
                 .andExpect(model().attributeExists("filterCategory", "sortDir","dishList",
-                         "reverseSortDir"));
+                         "reverseSortDir", "currentPage", "pageSize"));
     }
 
 }

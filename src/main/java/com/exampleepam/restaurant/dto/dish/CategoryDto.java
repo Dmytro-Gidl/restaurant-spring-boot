@@ -1,4 +1,4 @@
-package com.exampleepam.restaurant.dto;
+package com.exampleepam.restaurant.dto.dish;
 
 /**
  * Category DTO for DishDTOs

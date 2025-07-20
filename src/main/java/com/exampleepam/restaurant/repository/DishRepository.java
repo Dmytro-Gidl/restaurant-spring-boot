@@ -12,7 +12,15 @@ import java.util.List;
 
 @Repository
 public interface DishRepository extends JpaRepository<Dish, Long> {
-    List<Dish> findDishesByCategory(Category category, Sort sort);
+    List<Dish> findDishesByCategoryAndArchivedFalse(Category category, Sort sort);
 
-    Page<Dish> findPagedByCategory(Category category, Pageable pageable);
+    Page<Dish> findPagedByCategoryAndArchivedFalse(Category category, Pageable pageable);
+
+    Page<Dish> findAllByArchivedFalse(Pageable pageable);
+
+    List<Dish> findAllByArchivedFalse(Sort sort);
+
+    Page<Dish> findAllByArchivedTrue(Pageable pageable);
+
+    List<Dish> findAllByArchivedTrue(Sort sort);
 }

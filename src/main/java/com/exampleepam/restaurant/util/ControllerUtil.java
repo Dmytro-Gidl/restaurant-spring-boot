@@ -1,6 +1,6 @@
 package com.exampleepam.restaurant.util;
 
-import com.exampleepam.restaurant.dto.OrderCreationDto;
+import com.exampleepam.restaurant.dto.order.OrderCreationDto;
 
 import java.util.Map;
 import java.util.stream.Collectors;

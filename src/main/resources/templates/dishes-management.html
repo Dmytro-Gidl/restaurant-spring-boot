@@ -16,7 +16,7 @@
             crossorigin="anonymous"
     ></script>
     <script src="jquery-3.6.0.min.js"></script>
-
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
 
     <meta charset="UTF-8">
     <title>Dishes management</title>
@@ -55,6 +55,11 @@
                 <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
                 + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=snacks' + '&pageSize=' + ${pageSize}}"
                    class="dropdown-item">Snacks</a></li>
+            <li>
+                <a th:text="#{dish.filter.category.archived}"
+                   th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
+                   + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=archived' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Archived</a></li>
         </ul>
     </div>
 
@@ -105,16 +110,32 @@
 
             <td>
 
-                <a th:text="#{dish.update}"
-                        th:href="@{'/admin/dishes/'+ ${dish.id} + '/update-form'}"
-                        class="btn btn-primary">Update</a>
-                <form class="d-inline"
-                      th:method="delete"
-                      th:action="@{'/admin/dishes/' + ${dish.id} + '/page/' + ${currentPage} + '?sortField=' + ${sortField}
+                <div th:if="${filterCategory != 'archived'}">
+                    <a th:text="#{dish.update}"
+                            th:href="@{'/admin/dishes/'+ ${dish.id} + '/update-form'}"
+                            class="btn btn-primary">Update</a>
+                    <form class="d-inline"
+                          th:method="delete"
+                          th:action="@{'/admin/dishes/' + ${dish.id} + '/page/' + ${currentPage} + '?sortField=' + ${sortField}
                    + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
-                    <button th:text="#{dish.delete}"
-                            class="btn btn-danger" type="submit">Delete</button>
-                </form>
+                        <button th:text="#{dish.archive}"
+                                class="btn btn-danger" type="submit">Archive</button>
+                    </form>
+                </div>
+                <div th:if="${filterCategory == 'archived'}">
+                    <form class="d-inline"
+                          th:method="put"
+                          th:action="@{'/admin/dishes/' + ${dish.id} + '/restore/page/' + ${currentPage} + '?sortField=' + ${sortField}
+                   + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
+                        <button th:text="#{dish.restore}" class="btn btn-success" type="submit">Restore</button>
+                    </form>
+                    <form class="d-inline"
+                          th:method="delete"
+                          th:action="@{'/admin/dishes/' + ${dish.id} + '/hard-delete/page/' + ${currentPage} + '?sortField=' + ${sortField}
+                   + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}">
+                        <button th:text="#{dish.delete}" class="btn btn-danger" type="submit">Delete</button>
+                    </form>
+                </div>
 
             </td>
         </tr>

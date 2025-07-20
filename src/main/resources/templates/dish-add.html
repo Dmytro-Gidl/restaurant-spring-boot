@@ -29,13 +29,13 @@
 
     <!-- Main CSS-->
     <link rel="stylesheet" type="text/css" href="/css/form.css"/>
-
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
 </head>
 
 <body>
 <div th:replace="fragments/topnav :: navbar"></div>
 
-<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins">
+<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins" id="addBackground">
     <div class="wrapper wrapper--w680">
         <div class="card card-4">
             <div class="card-body">
@@ -101,7 +101,7 @@
                                 <div>
 
                                     <select th:field="*{category}" class="form-select" aria-label="Choose category">
-                                        <option th:each="category : ${T(com.exampleepam.restaurant.dto.CategoryDto).values()}"
+                                        <option th:each="category : ${categories}"
                                                 th:value="${category}" th:text="${category}"></option>
                                     </select>
 
@@ -114,19 +114,17 @@
                         <div class="input-group d-flex flex-column">
                             <!-- ROW -->
 
-                            <label th:text="#{dish.image}" for="image" class="form-label">Image</label>
-                            <div class="mb-3">
-                                <input
-                                        type="file"
-                                        class="form-control"
-                                        id="image"
-                                        name="image"
-                                        accept="image/png, image/jpeg"
-                                        aria-describedby="imageDescription"
-                                />
-                                <div th:text="#{dish.image.description}" id="imageDescription" class="form-text">
-                                    Image will be resized to 200 x 200 pixels
+                            <label th:text="#{dish.image}" for="image1" class="form-label">Images</label>
+                            <div class="mb-3" th:each="i : ${#numbers.sequence(1,4)}">
+                                <input type="file" class="form-control" th:id="'image'+${i}" name="images"
+                                       accept="image/png, image/jpeg" aria-describedby="imageDescription" />
+                                <div class="form-check form-check-inline ms-2">
+                                    <input class="form-check-input" type="radio" th:id="'priAdd'+${i}" name="primaryIndex" th:value="${i-1}" th:checked="${i==1}" />
+                                    <label class="form-check-label" th:for="'priAdd'+${i}">Primary</label>
                                 </div>
+                            </div>
+                            <div th:text="#{dish.image.description}" id="imageDescription" class="form-text">
+                                Images keep their original quality
                             </div>
                             <!-- ROW -->
                         </div>
@@ -142,5 +140,13 @@
     </div>
 </div>
 
+<script>
+    document.getElementById('addBackground').addEventListener('click', function(e) {
+        const card = document.querySelector('.card');
+        if(card && !card.contains(e.target)) {
+            window.location.href = '/admin/dishes';
+        }
+    });
+</script>
 </body>
 </html>

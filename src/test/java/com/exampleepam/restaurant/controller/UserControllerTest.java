@@ -26,14 +26,15 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @WebMvcTest(UserController.class)
 @Import(ControllerConfiguration.class)
- class UserControllerTest {
+class UserControllerTest {
     MockMvc mockMvc;
 
     @MockBean
     UserService userService;
     @MockBean
     MyUserDetailsService myUserDetailsService;
-@Autowired
+
+    @Autowired
     public UserControllerTest(MockMvc mockMvc) {
         this.mockMvc = mockMvc;
     }
@@ -61,6 +62,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
                 .andExpect(view().name("sign-up"))
                 .andExpect(model().attributeExists("user"));
     }
+
     @Test
     @WithUserDetails(USER_EMAIL)
     public void topupBalance() throws Exception {

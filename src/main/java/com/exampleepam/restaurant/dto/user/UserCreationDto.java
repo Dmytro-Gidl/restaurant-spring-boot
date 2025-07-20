@@ -1,4 +1,4 @@
-package com.exampleepam.restaurant.dto;
+package com.exampleepam.restaurant.dto.user;
 
 import com.exampleepam.restaurant.validator.PasswordMatches;
 import com.exampleepam.restaurant.validator.ValidEmail;
@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
 
-import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
 /**

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkout - Restaurant Name</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="/css/form.css"/>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Roboto', sans-serif;
+      color: #333;
+    }
+    .navbar {
+      background-color: #000;
+      padding: 10px 20px;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+    }
+    .navbar-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: #fff !important;
+    }
+    .checkout-container {
+      max-width: 1100px;
+      margin: 120px auto 40px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    .checkout-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .card {
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      background: #fff;
+    }
+    .card-header {
+      background-color: #000;
+      color: #fff;
+      text-align: center;
+      font-size: 1.5rem;
+      padding: 15px;
+    }
+    .order-total {
+      font-size: 1.75rem;
+      font-weight: bold;
+      color: #000;
+      margin-top: 15px;
+    }
+    .btn-qty {
+      width: 36px;
+      height: 36px;
+      transition: background-color 0.3s ease;
+    }
+    .btn-qty:hover {
+      background-color: #444;
+    }
+    .btn-primary, .btn-primary:hover {
+      background-color: #000;
+      border: none;
+    }
+    .table thead th {
+      border-bottom: 2px solid #dee2e6;
+    }
+    /* Ensure autocomplete dropdown is clickable */
+    .pac-container {
+      z-index: 9999 !important;
+    }
+  </style>
+  <!-- Google Places API -->
+  <script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&libraries=places|}" async defer></script>
+</head>
+<body>
+<!-- Common fixed header -->
+<div th:replace="fragments/topnav :: navbar"></div>
+
+<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins">
+  <h1 class="checkout-heading">Checkout</h1>
+  <div class="checkout-container">
+  <div class="row g-4">
+    <!-- Order Summary Card -->
+    <div class="col-md-7">
+      <div class="card">
+        <div class="card-header">Your Order</div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+              <tr>
+                <th>Dish</th>
+                <th class="text-center">Quantity</th>
+                <th>Subtotal</th>
+                <th class="text-center">Remove</th>
+              </tr>
+              </thead>
+              <tbody id="orderItems"></tbody>
+            </table>
+            <div class="d-flex justify-content-end">
+              <div class="order-total">
+                Total: <span id="orderTotal">0.00</span> ₴
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delivery Address Card -->
+    <div class="col-md-5">
+      <div class="card">
+        <div class="card-header">Delivery Details</div>
+        <div class="card-body">
+          <!-- Using Thymeleaf form binding to automatically include CSRF token -->
+          <form th:action="@{/orders}" th:object="${orderCreationDto}" method="post" id="checkoutForm">
+            <!-- Thymeleaf and Spring Security auto-add the CSRF token when using form binding -->
+            <div class="mb-3">
+              <label for="address" class="form-label">Delivery Address</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                <!-- Bind address field -->
+                <input type="text" class="form-control" id="address" th:field="*{address}" placeholder="Enter your street..." required/>
+              </div>
+              <div class="form-text">
+                Start typing to see address suggestions. You must pick from the dropdown.
+              </div>
+              <div class="text-danger" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+            </div>
+            <p class="text-danger" th:if="${#fields.hasGlobalErrors()}" th:each="err : ${#fields.errors('global')}" th:text="${err}"></p>
+            <!-- Container for dynamically added hidden inputs for dishIdQuantityMap -->
+            <div id="dishHiddenInputs"></div>
+            <button type="submit" class="btn btn-primary btn-lg w-100">Confirm Order</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+<script>
+  // Track if a place was selected from the autocomplete dropdown.
+  let placeSelected = false;
+  function initAutocomplete() {
+    const kyivBounds = new google.maps.LatLngBounds(
+        new google.maps.LatLng(50.213273, 30.239440),
+        new google.maps.LatLng(50.590798, 30.825941)
+    );
+    const addressInput = document.getElementById('address');
+    const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+      types: ['address'],
+      componentRestrictions: { country: 'ua' }
+    });
+    autocomplete.setBounds(kyivBounds);
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      placeSelected = !!place.address_components;
+      console.log('Selected place:', place);
+    });
+  }
+  // Prevent form submission if a valid address wasn’t selected.
+  function enforceAutocompleteSelection(event) {
+    if (!placeSelected) {
+      event.preventDefault();
+      alert('Please select an address from the dropdown suggestions.');
+    }
+  }
+  window.addEventListener('load', () => {
+    if (typeof google !== 'undefined' && google.maps) {
+      initAutocomplete();
+    } else {
+      console.warn('Google Maps script did not load. Check your API key & restrictions.');
+    }
+    // On form submission, update hidden dish inputs and enforce autocomplete selection.
+    document.getElementById('checkoutForm').addEventListener('submit', function(event) {
+      updateDishHiddenInputs(); // Update hidden inputs for dishIdQuantityMap.
+      enforceAutocompleteSelection(event);
+    });
+    loadCart();
+    renderOrderItems();
+  });
+
+  // ------------------
+  // Cart Management Logic
+  // ------------------
+  let cart = {};
+  function loadCart() {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      cart = JSON.parse(savedCart);
+    }
+  }
+  function saveCart() {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }
+  function calcOrder() {
+    let total = 0;
+    for (let dishId in cart) {
+      const item = cart[dishId];
+      total += item.price * item.quantity;
+    }
+    return total.toFixed(2);
+  }
+  function renderOrderItems() {
+    const orderItemsBody = document.getElementById('orderItems');
+    orderItemsBody.innerHTML = '';
+    const cartKeys = Object.keys(cart);
+    if (!cartKeys.length) {
+      orderItemsBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center fw-bold">
+              Your cart is empty. Please add dishes from the menu.
+            </td>
+          </tr>`;
+      document.getElementById('orderTotal').textContent = '0.00';
+      return;
+    }
+    let total = 0;
+    cartKeys.forEach(dishId => {
+      const item = cart[dishId];
+      const lineTotal = item.price * item.quantity;
+      total += lineTotal;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+          <td>${item.name}</td>
+          <td class="text-center">
+            <div class="d-inline-flex align-items-center">
+              <button type="button" class="btn btn-secondary btn-qty me-2">
+                <i class="fas fa-minus"></i>
+              </button>
+              <span class="mx-1">${item.quantity}</span>
+              <button type="button" class="btn btn-secondary btn-qty ms-2">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </td>
+          <td>${lineTotal.toFixed(2)} ₴</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-danger btn-qty">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </td>`;
+      const [decBtn, incBtn] = row.querySelectorAll('.btn-secondary');
+      decBtn.addEventListener('click', () => updateQuantity(dishId, item.quantity - 1));
+      incBtn.addEventListener('click', () => updateQuantity(dishId, item.quantity + 1));
+      const removeBtn = row.querySelector('.btn-danger');
+      removeBtn.addEventListener('click', () => removeItem(dishId));
+      orderItemsBody.appendChild(row);
+    });
+    document.getElementById('orderTotal').textContent = total.toFixed(2);
+  }
+  function updateQuantity(dishId, newQty) {
+    if (newQty <= 0) {
+      delete cart[dishId];
+    } else {
+      cart[dishId].quantity = newQty;
+    }
+    saveCart();
+    renderOrderItems();
+  }
+  function removeItem(dishId) {
+    delete cart[dishId];
+    saveCart();
+    renderOrderItems();
+  }
+  // ------------------
+  // Update Hidden Inputs for dishIdQuantityMap
+  // ------------------
+  function updateDishHiddenInputs() {
+    const dishHiddenInputsContainer = document.getElementById('dishHiddenInputs');
+    dishHiddenInputsContainer.innerHTML = ''; // Clear previous inputs
+    for (let dishId in cart) {
+      let input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = `dishIdQuantityMap[${dishId}]`;
+      input.value = cart[dishId].quantity;
+      dishHiddenInputsContainer.appendChild(input);
+    }
+  }
+</script>
+</body>
+</html>

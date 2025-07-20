@@ -1,11 +1,9 @@
 package com.exampleepam.restaurant.controller.admin;
 
 import com.exampleepam.restaurant.ControllerConfiguration;
-import com.exampleepam.restaurant.dto.DishCreationDto;
-import com.exampleepam.restaurant.dto.DishResponseDto;
+import com.exampleepam.restaurant.dto.dish.DishCreationDto;
 import com.exampleepam.restaurant.security.MyUserDetailsService;
 import com.exampleepam.restaurant.service.DishService;
-import com.exampleepam.restaurant.service.OrderService;
 import com.exampleepam.restaurant.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -19,17 +17,8 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.persistence.EntityNotFoundException;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
-import java.util.HashMap;
 
 import static com.exampleepam.restaurant.test_data.TestData.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -95,19 +84,40 @@ public class AdminDishControllerTest {
         DishCreationDto dishCreationDto = getDishCreationDto();
 
 
-        MockMultipartFile notEmptyFile
-                = new MockMultipartFile(
-                "image",
-                "image.jpg",
+        MockMultipartFile file1 = new MockMultipartFile(
+                "images",
+                "image1.jpg",
                 MediaType.IMAGE_JPEG_VALUE,
-     "Simulate not empty file".getBytes()
+                "file1".getBytes()
+        );
+        MockMultipartFile file2 = new MockMultipartFile(
+                "images",
+                "image2.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "file2".getBytes()
         );
         mockMvc.perform(multipart("/admin/dishes")
-                        .file(notEmptyFile)
+                        .file(file1)
+                        .file(file2)
+                        .param("primaryIndex", "0")
                         .flashAttr("dish", dishCreationDto)
                         .with(csrf()))
                 .andExpect(redirectedUrl("/admin/dishes"));
-        Mockito.verify(dishService, Mockito.times(1)).saveWithFile(dishCreationDto, notEmptyFile);
+        Mockito.verify(dishService, Mockito.times(1)).saveWithFiles(Mockito.eq(dishCreationDto), Mockito.anyList());
+    }
+
+    @Test
+    void saveNewDishValidationFail() throws Exception {
+        DishCreationDto invalidDto = new DishCreationDto();
+
+        mockMvc.perform(MockMvcRequestBuilders.multipart("/admin/dishes")
+                        .flashAttr("dish", invalidDto)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("dish-add"))
+                .andExpect(model().attributeExists("categories"));
+
+        Mockito.verify(dishService, Mockito.never()).saveWithFiles(Mockito.any(), Mockito.anyList());
     }
 
     @Test
@@ -121,6 +131,30 @@ public class AdminDishControllerTest {
                 .andExpect(status()
                         .is3xxRedirection());
         Mockito.verify(dishService, Mockito.times(1)).deleteDishById(10);
+    }
+
+    @Test
+    void restoreDish() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.put("/admin/dishes/15/restore/page/2")
+                        .param("sortField", "name")
+                        .param("sortDir", "asc")
+                        .param("filterCategory", "archived")
+                        .param("pageSize", "10")
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        Mockito.verify(dishService, Mockito.times(1)).restoreDishById(15);
+    }
+
+    @Test
+    void hardDeleteDish() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/admin/dishes/20/hard-delete/page/1")
+                        .param("sortField", "name")
+                        .param("sortDir", "asc")
+                        .param("filterCategory", "archived")
+                        .param("pageSize", "10")
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        Mockito.verify(dishService, Mockito.times(1)).hardDeleteDish(20);
     }
 
     @Test
@@ -147,13 +181,10 @@ public class AdminDishControllerTest {
                             rq.setMethod("PUT");
                             return rq;
                         });
-        var oldDish = getDishResponseDto();
         DishCreationDto dishCreationDto = getDishCreationDto();
-        Mockito.when(dishService.getDishById(3)).thenReturn(oldDish);
 
-        MockMultipartFile emptyFile
-                = new MockMultipartFile(
-                "image",
+        MockMultipartFile emptyFile = new MockMultipartFile(
+                "images",
                 "image.jpg",
                 MediaType.IMAGE_JPEG_VALUE,
                 new byte[0]
@@ -161,9 +192,12 @@ public class AdminDishControllerTest {
 
         mockMvc.perform(putMultipart
                         .file(emptyFile)
+                        .param("existingImages", "image.jpg")
+                        .param("primaryIndex", "0")
                         .flashAttr("dish", dishCreationDto)
                         .with(csrf()))
                 .andExpect(redirectedUrl("/admin/dishes"));
+        Mockito.verify(dishService, Mockito.times(1)).updateWithFiles(Mockito.eq(dishCreationDto), Mockito.anyList(), Mockito.anyMap(), Mockito.any());
     }
 
 }

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    <!-- Use FontAwesome 4.7 for consistent star icons across pages -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>Review Order</title>
+
+
+    <!-- Optional Google Font -->
+    <link
+            href="https://fonts.googleapis.com/css?family=Poppins:100,200,300,400,500,600,700,900"
+            rel="stylesheet"
+    />
+
+    <!-- Bootstrap -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+    />
+    <link rel="stylesheet" type="text/css" href="/css/form.css"/>
+
+    <style>
+        /* Dark gradient background + your image */
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.93), rgba(0, 0, 0, 0.93)),
+            url("/images/saveInPhotoshop.png") no-repeat;
+            background-size: cover;
+
+            color: #fff; /* for text outside the container */
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Main "light" container for the review form */
+        .review-container {
+            max-width: 800px;
+            margin: 80px auto;
+            background: #f4f4f4;
+            border-radius: 8px;
+            padding: 30px;
+            color: #333;  /* dark text inside the container */
+        }
+
+        .review-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 40px;
+        }
+
+        .dish-row {
+            display: flex;
+            align-items: flex-start;
+            background: #fff;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .dish-img-container {
+            width: 140px;
+            margin-right: 25px;
+            text-align: center;
+        }
+        .dish-img-container img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 1px solid #ddd;
+            padding: 3px;
+            transition: 0.5s;
+        }
+        /* Circle -> square on hover (like the menu) */
+        .dish-img-container:hover img {
+            border-radius: 0;
+        }
+
+        .dish-content {
+            flex: 1;
+        }
+        .dish-name {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+
+        /*
+         Star rating colors:
+           - unselected: lighter yellow (#FBC02D)
+           - hovered/selected: gold (#FFD700)
+        */
+        .star-rating i {
+            font-size: 1.8rem;
+            color: #FBC02D; /* unselected base color */
+            cursor: pointer;
+            margin-right: 4px;
+            transition: color 0.2s;
+        }
+        .star-rating .fa-star-o:hover,
+        .star-rating .fa-star-o.hovered {
+            color: #FFD700; /* bright gold on hover */
+        }
+
+        label.form-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        textarea.form-control {
+            border: 1px solid #999;
+            border-radius: 4px;
+        }
+        textarea.form-control:focus {
+            box-shadow: none;
+            border-color: #007bff;
+        }
+
+        .btn-submit {
+            background: #007bff;
+            border: none;
+            font-size: 1rem;
+            padding: 12px 30px;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+<div th:replace="fragments/topnav :: navbar"></div>
+
+<div id="reviewBackground">
+<div class="review-container">
+    <a href="/orders/history" class="text-decoration-none text-dark mb-3 d-inline-block">
+        <i class="fa fa-arrow-left me-2"></i>Back to order history
+    </a>
+    <h2 class="review-title">
+        <span th:text="#{review.multiple.form.title}">Review your order</span>
+        #<span th:text="${orderId}">OrderID</span>
+    </h2>
+
+    <!-- The final form posting to /orders/{orderId}/reviews -->
+    <form th:object="${reviewForm}" th:action="@{'/orders/' + ${orderId} + '/reviews'}" method="post">
+
+        <div th:each="dish, iterStat : ${dishes}" class="dish-row">
+            <div class="dish-img-container">
+                <img th:if="${dish.imageFileName != null}"
+                     th:src="@{${dish.getimagePath()}}"
+                     alt="Dish image" />
+                <img th:if="${dish.imageFileName == null}"
+                     src="https://via.placeholder.com/150"
+                     alt="Placeholder" />
+            </div>
+            <div class="dish-content">
+                <div class="dish-name" th:text="${dish.name}">Dish Name</div>
+
+                <!-- Binding dishId -->
+                <input type="hidden"
+                       th:id="'reviews[' + ${iterStat.index} + '].id'"
+                       th:name="'reviews[' + ${iterStat.index} + '].id'"
+                       th:value="${dish.id}" />
+
+
+                <!-- Star rating -->
+                <label class="form-label" th:text="#{review.rating}">Rating</label>
+                <div class="star-rating">
+                    <i class="fa fa-star-o" data-value="1"></i>
+                    <i class="fa fa-star-o" data-value="2"></i>
+                    <i class="fa fa-star-o" data-value="3"></i>
+                    <i class="fa fa-star-o" data-value="4"></i>
+                    <i class="fa fa-star-o" data-value="5"></i>
+                </div>
+                <input type="hidden" th:field="*{reviews[__${iterStat.index}__].rating}" />
+
+                <!-- Comment -->
+                <label class="form-label" th:text="#{review.comment}">Comment</label>
+                <textarea class="form-control"
+                          th:field="*{reviews[__${iterStat.index}__].comment}"
+                          rows="3"
+                          placeholder="Write your thoughts..."></textarea>
+            </div>
+        </div>
+
+
+        <div class="mt-4 text-end">
+            <button class="btn-submit" type="submit">
+                <span th:text="#{review.submit.button}">Submit</span>
+            </button>
+        </div>
+</form>
+</div>
+</div>
+
+<!-- Bootstrap Bundle -->
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script>
+    // For each dish-row, handle star rating
+    document.querySelectorAll('.dish-row').forEach(dishRow => {
+        const stars = dishRow.querySelectorAll('.star-rating .fa-star-o, .star-rating .fa-star');
+        const ratingInput = dishRow.querySelector('input[name*="rating"]');
+
+        stars.forEach(star => {
+            // On hover-in
+            star.addEventListener('mouseover', () => {
+                resetStars(stars);
+                highlightStars(stars, parseInt(star.getAttribute('data-value')));
+            });
+            // On hover-out
+            star.addEventListener('mouseout', () => {
+                resetStars(stars);
+                const current = parseInt(ratingInput.value) || 0;
+                if (current > 0) {
+                    highlightStars(stars, current);
+                }
+            });
+            // On click
+            star.addEventListener('click', () => {
+                const val = parseInt(star.getAttribute('data-value'));
+                ratingInput.value = val;
+                resetStars(stars);
+                highlightStars(stars, val);
+            });
+        });
+    });
+
+    function highlightStars(stars, value) {
+        stars.forEach(star => {
+            const starValue = parseInt(star.getAttribute('data-value'));
+            if (starValue <= value) {
+                // Replace outline with filled star
+                star.classList.remove('fa-star-o');
+                star.classList.add('fa-star', 'selected');
+                // Also set color to #FFD700 for bright gold
+                star.style.color = '#FFD700';
+            }
+        });
+    }
+
+    function resetStars(stars) {
+        stars.forEach(star => {
+            star.classList.remove('fa-star', 'selected');
+            star.classList.add('fa-star-o');
+            star.style.color = '#FBC02D';  // revert to unselected color
+        });
+    }
+
+    document.getElementById('reviewBackground').addEventListener('click', function(e) {
+        const container = document.querySelector('.review-container');
+        if (container && !container.contains(e.target)) {
+            window.location.href = '/menu';
+        }
+    });
+</script>
+
+</body>
+</html>

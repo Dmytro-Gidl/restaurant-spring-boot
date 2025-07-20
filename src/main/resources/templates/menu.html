@@ -1,21 +1,19 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
->
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Menu</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+          crossorigin="anonymous">
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
             crossorigin="anonymous"></script>
-
-
-    <link rel="stylesheet" type="text/css" href="/css/style-menu.css "/>
+    <!-- FontAwesome 4.7 for icons like stars and cart -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/style-menu.css"/>
 
 </head>
 <body>
@@ -25,11 +23,10 @@
 <div class="wrapper">
     <div class="title">
         <span th:text="#{menu.tagline}" class="slogan">Good food and great vibes</span>
-        <h4 th:text="#{menu.headline}">our menu</h4>
+        <h4 th:text="#{menu.headline}">Our Menu</h4>
     </div>
 
     <!--SORT AND FILTER-->
-
     <div class="filter-menu d-flex justify-content-end mb-4 flex-column">
         <div class="filter-menu-desc text-center">
             <p th:text="#{menu.sort}" class="m-0 fs-4">Sort by and Filter</p>
@@ -42,116 +39,119 @@
                th:href="@{'/menu?sortField=price&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}}"
                class="btn btn-outline-light mt-3 btn-lg">Price</a>
             <a th:text="#{menu.sort.category}"
-               th:href="@{'/menu?sortField=category&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}} "
+               th:href="@{'/menu?sortField=category&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}}"
                class="btn btn-outline-light mt-3 btn-lg">Category</a>
 
             <div class="btn-group" role="group">
-                <button th:text="#{menu.filter.category} " id="btnGroupDrop1" type="button"
+                <button th:text="#{menu.filter.category}" id="btnGroupDrop1" type="button"
                         class="btn btn-outline-light mt-3 btn-lg dropdown-toggle"
                         data-bs-toggle="dropdown" aria-expanded="false">
                     Choose Category
                 </button>
-
-
                 <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
                     <li>
                         <a th:text="#{menu.filter.category.all}"
                            th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=all'}"
-                           class="dropdown-item" href="#">Show all</a></li>
+                           class="dropdown-item">Show all</a>
+                    </li>
                     <li>
                         <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=drinks'}"
-                           class="dropdown-item" href="#">Drinks</a></li>
+                           class="dropdown-item">Drinks</a>
+                    </li>
                     <li>
                         <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=burgers'}"
-                           class="dropdown-item" href="#">Burgers</a></li>
+                           class="dropdown-item">Burgers</a>
+                    </li>
                     <li>
                         <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=snacks'}"
-                           class="dropdown-item" href="#">Snacks</a></li>
+                           class="dropdown-item">Snacks</a>
+                    </li>
                 </ul>
             </div>
         </div>
-
     </div>
 
     <!--MENU-->
-    <div th:if="${dishList.size() > 0}">
-
-        <form onsubmit="clearLocalStorage()"
+    <div th:if="${dishList.page.content.size() > 0}">
+        <form
               th:action="@{/orders}"
               th:object="${orderCreationDto}"
               method="post">
 
             <div class="menu">
-
-                <div class="single-menu" th:each="dish : ${dishList}">
-
-                    <img th:if="${dish.imageFileName != null}" th:src="@{${dish.getimagePath()}}"/>
-                    <img th:if="${dish.imageFileName == null}" src="https://via.placeholder.com/150"/>
-                    <div class="menu-content">
-                        <h4 th:inline="text">[[${dish.name}]]<span class="price" th:text="${dish.price}">45</span></h4>
-                        <p class="mb-0 text-color:red" th:text="${dish.category}">DRINKS</p>
-                        <p th:text="${dish.description}" class="menu-description">
-                            Aperiam tempore sit,perferendis numquam repudiandae porro
-                            voluptate dicta saepe facilis.
-                        </p>
-                        <div class="myContainer m-1">
-                            <button class="decrement" type="button" onclick="stepperDecrement(this)">-</button>
-                            <input
-                                    th:value="0"
-                                    th:name="${'dishIdQuantityMap[' + dish.id + ']'}"
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="1"
-                                    readonly
-                            />
-                            <button class="increment" type="button" onclick="stepperIncrement(this)">+</button>
-                        </div>
-                    </div>
+                <div th:each="dish : ${dishList.page}">
+                    <div th:replace="fragments/dishCard :: dishCard(dish=${dish})"></div>
                 </div>
             </div>
+
+            <!-- Original sum display (optional) -->
             <span th:text="#{menu.total.sum}"
-                  class="h4 text-uppercase font-weight-bold mb-4 ">Total sum: </span>
-            <span class="h2 font-weight-bold total-price"> 0</span>
-            <span class=" h4 currency">₴</span>
+                  class="h4 text-uppercase font-weight-bold mb-4">Total sum:</span>
+            <span class="h2 font-weight-bold total-price">0</span>
+            <span class="h4 currency">₴</span>
 
-
-            <div class="d-flex justify-content-center">
-
-
-
-                <div class="mb-3 text-center fw-bold col-8" style="font-size:1.5rem">
-                    <label th:text="#{menu.input.address}" for="address" class="form-label">Input your address</label>
-                        <th:block th:if="${#fields.hasAnyErrors()}" th:each="error : ${#fields.errors()}">
-                            <p class="1h-sm fs-6 text-danger" th:text="${error}" style="color: red; margin: 0;">Error</p>
-                        </th:block>
-                    <input type="text"
-                           th:classappend="${#fields.hasAnyErrors() ? 'is-invalid' : 'dummy'}"
-                           th:field="*{address}"
-                           class="form-control"
-                           id="address"
-                           required>
-                    <button th:text="#{menu.order.confirm}" type="submit" value="Submit"
-                            class="btn btn-outline-light mt-3 btn-lg">Confirm order
-                    </button>
-
-                </div>
-
-            </div>
+            <!-- Address input removed: users provide address on the checkout page -->
         </form>
+        <nav aria-label="Page navigation" class="paging col mt-3">
+            <ul class="pagination" th:if="${dishList.page.totalPages > 1}">
+                <li class="page-item" th:classappend="${!dishList.paging.prevEnabled? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="@{'/menu?pageNo=' + (${dishList.paging.pageNumber - 1}) + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}"
+                       tabindex="-1" th:text="#{pagination.previous}">Previous</a>
+                </li>
+                <th:block th:each="item : ${dishList.paging.items}">
+                    <li class="page-item"
+                        th:classappend="${item.index == dishList.paging.pageNumber? 'active' : ''}"
+                        th:if="${item.pageItemType.name() == 'PAGE'}">
+                        <a class="page-link"
+                           th:href="@{'/menu?pageNo=' + ${item.index} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}"
+                           th:text="${item.index}"></a>
+                    </li>
+                    <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
+                        <a class="page-link" href="#">...</a>
+                    </li>
+                </th:block>
+                <li class="page-item" th:classappend="${!dishList.paging.nextEnabled? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="@{'/menu?pageNo=' + (${dishList.paging.pageNumber + 1}) + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}"
+                       th:text="#{pagination.next}">Next</a>
+                </li>
+            </ul>
+        </nav>
     </div>
+</div>
 
-</div>
-</div>
-<div th:unless="${dishList.size() != 0}" class="text-center">
-    <p th:text="#{the.category.empty}"
-       class="display-2 text-white">Menu is in development.</p>
+<!-- If no dishes exist -->
+<div th:unless="${dishList.page.totalElements != 0}" class="text-center">
+    <p th:text="#{the.category.empty}" class="display-2 text-white">Menu is in development.</p>
     <p th:text="#{choose.another}" class="display-2 text-white">Choose another one or come back later.</p>
     <p class="display-2 text-white">:(</p>
 </div>
 
-<!--</div>-->
-<script type="text/javascript" th:src="@{/js/button.js}"></script>
+<!-- BOTTOM-RIGHT PINNED CART -->
+<div id="bottom-right-cart">
+    <h5>Your Order</h5>
+    <div id="cart-items-list"></div>
+    <div class="cart-total-line">
+        Total: <span id="bottomCartTotal">0</span> ₴
+    </div>
+    <button class="checkout-btn" onclick="proceedToCheckout()">Checkout</button>
+</div>
 
+<div id="imageOverlay" class="image-overlay" style="display:none" onclick="hideOverlay()">
+    <button id="overlayPrev" class="overlay-nav" onclick="event.stopPropagation()">&lt;</button>
+    <div id="overlayContent" onclick="event.stopPropagation()"></div>
+    <button id="overlayNext" class="overlay-nav" onclick="event.stopPropagation()">&gt;</button>
+</div>
+
+<script>
+    function proceedToCheckout() {
+        window.location.href = '/orders/checkout';
+    }
+</script>
+
+<script type="text/javascript" th:src="@{/js/button.js}"></script>
+<script type="text/javascript" th:src="@{/js/menu-scroll.js}"></script>
+<script type="text/javascript" th:src="@{/js/image-overlay.js}"></script>
 </body>
 </html>
