@@ -151,13 +151,19 @@
     document.getElementById('reviewsBackground').addEventListener('click', function (e) {
         const container = document.querySelector('.review-wrapper');
         if (container && !container.contains(e.target)) {
-            const params = new URLSearchParams({
-                pageNo: [[${menuPage}]],
-                pageSize: [[${menuPageSize}]],
-                sortField: '[[${sortField}]]',
-                sortDir: '[[${sortDir}]]',
-                filterCategory: '[[${filterCategory}]]'
-            });
+            const params = new URLSearchParams();
+            const pg = '[[${menuPage}]]';
+            const sz = '[[${menuPageSize}]]';
+            const sf = '[[${sortField}]]';
+            const sd = '[[${sortDir}]]';
+            const fc = '[[${filterCategory}]]';
+
+            if (pg && pg !== 'null') params.set('pageNo', pg);
+            if (sz && sz !== 'null') params.set('pageSize', sz);
+            if (sf && sf !== 'null') params.set('sortField', sf);
+            if (sd && sd !== 'null') params.set('sortDir', sd);
+            if (fc && fc !== 'null') params.set('filterCategory', fc);
+
             window.location.href = '/menu?' + params.toString();
         }
     });

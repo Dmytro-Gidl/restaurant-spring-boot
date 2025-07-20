@@ -121,7 +121,7 @@
                             <div th:with="names=${dish.getAllImageFileNames()}">
                                 <div class="mb-3" th:each="name,stat : ${names}">
                                     <label class="form-label" th:text="'Image ' + (${stat.index + 1})"></label>
-                                    <img th:src="@{'/dish-images/' + ${dish.id} + '/' + ${name}}" width="120" class="mb-1"/>
+                                    <img th:src="@{'/dish-images/' + ${dish.id} + '/' + ${name}}" width="120" class="mb-1 ms-3"/>
                                     <input type="hidden" name="existingImages" th:value="${name}" />
                                     <div class="form-check form-check-inline ms-2">
                                         <input class="form-check-input" type="checkbox" th:id="'del'+${stat.index}" name="deleteImages" th:value="${name}" />

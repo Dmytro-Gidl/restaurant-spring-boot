@@ -47,7 +47,6 @@
                 + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=burgers' + '&pageSize=' + ${pageSize}}"
                    class="dropdown-item">Burgers</a></li>
             <li>
-            <li>
                 <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
                 + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=drinks' + '&pageSize=' + ${pageSize}}"
                    class="dropdown-item">Drinks</a></li>
@@ -55,6 +54,26 @@
                 <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
                 + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=snacks' + '&pageSize=' + ${pageSize}}"
                    class="dropdown-item">Snacks</a></li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
+                + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=pizza' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Pizza</a></li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='
+                + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=rolls' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Rolls</a></li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField=' + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=sets' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Sets</a></li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField=' + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=salads' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Salads</a></li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField=' + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=soups' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Soups</a></li>
+            <li>
+                <a th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField=' + ${sortField} +'&sortDir=' + ${sortDir} + '&filterCategory=desserts' + '&pageSize=' + ${pageSize}}"
+                   class="dropdown-item">Desserts</a></li>
             <li>
                 <a th:text="#{dish.filter.category.archived}"
                    th:href="@{'/admin/dishes/page/' + ${currentPage} + '?sortField='

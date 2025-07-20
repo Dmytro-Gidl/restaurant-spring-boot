@@ -6,5 +6,11 @@ package com.exampleepam.restaurant.dto.dish;
 public enum CategoryDto {
     DRINKS,
     BURGERS,
-    SNACKS
+    SNACKS,
+    PIZZA,
+    ROLLS,
+    SETS,
+    SALADS,
+    SOUPS,
+    DESSERTS
 }

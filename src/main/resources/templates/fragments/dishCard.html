@@ -1,7 +1,11 @@
 <!-- fragments/dishCard.html -->
 <div th:fragment="dishCard(dish)"
      class="single-menu"
-     th:attr="data-dish-id=${dish.id}, data-dish-name=${dish.name}, data-dish-price=${dish.price}, data-images=${dish.getImagePathsString()}">
+     th:attr="data-dish-id=${dish.id},
+              data-dish-name=${dish.name},
+              data-dish-price=${dish.price},
+              data-images=${dish.getImagePathsString()},
+              data-dish-description=${dish.description}">
     <img th:if="${dish.imageFileName != null}"
          th:src="@{${dish.getimagePath()}}"
          alt="Dish image"/>
