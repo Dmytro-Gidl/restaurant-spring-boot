@@ -68,7 +68,7 @@
 <div class="wrapper wrapper--w860">
 <div class="review-wrapper">
     <div class="position-relative mb-3 text-center">
-        <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}"
+        <a th:href="@{'/menu?pageNo=' + ${menuPage} + '&pageSize=' + ${menuPageSize} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}"
            class="text-decoration-none text-dark position-absolute start-0">
             <i class="fa fa-arrow-left me-2"></i>Back to menu
         </a>
@@ -147,11 +147,18 @@
 </div>
 </div>
 </div>
-<script>
+<script th:inline="javascript">
     document.getElementById('reviewsBackground').addEventListener('click', function (e) {
         const container = document.querySelector('.review-wrapper');
         if (container && !container.contains(e.target)) {
-            window.location.href = '/menu';
+            const params = new URLSearchParams({
+                pageNo: [[${menuPage}]],
+                pageSize: [[${menuPageSize}]],
+                sortField: '[[${sortField}]]',
+                sortDir: '[[${sortDir}]]',
+                filterCategory: '[[${filterCategory}]]'
+            });
+            window.location.href = '/menu?' + params.toString();
         }
     });
 </script>

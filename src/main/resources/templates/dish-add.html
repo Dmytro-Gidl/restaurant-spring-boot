@@ -35,7 +35,7 @@
 <body>
 <div th:replace="fragments/topnav :: navbar"></div>
 
-<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins">
+<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins" id="addBackground">
     <div class="wrapper wrapper--w680">
         <div class="card card-4">
             <div class="card-body">
@@ -140,5 +140,13 @@
     </div>
 </div>
 
+<script>
+    document.getElementById('addBackground').addEventListener('click', function(e) {
+        const card = document.querySelector('.card');
+        if(card && !card.contains(e.target)) {
+            window.location.href = '/admin/dishes';
+        }
+    });
+</script>
 </body>
 </html>

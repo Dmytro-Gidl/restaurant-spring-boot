@@ -64,7 +64,9 @@ public class DishService {
 
         Page<Dish> dishPage;
 
-        if (category.equals(CATEGORY_ALL)) {
+        if (category.equals("archived")) {
+            dishPage = dishRepository.findAllByArchivedTrue(pageable);
+        } else if (category.equals(CATEGORY_ALL)) {
             dishPage = dishRepository.findAllByArchivedFalse(pageable);
         } else {
             dishPage = dishRepository
@@ -248,5 +250,23 @@ public class DishService {
      */
     public void deleteDishById(long id) {
         archiveDishById(id);
+    }
+
+    /**
+     * Restore an archived Dish so it appears on the menu again.
+     */
+    public void restoreDishById(long id) {
+        dishRepository.findById(id).ifPresent(dish -> {
+            dish.setArchived(false);
+            dishRepository.save(dish);
+        });
+    }
+
+    /**
+     * Permanently delete a Dish and its files.
+     */
+    public void hardDeleteDish(long id) {
+        dishRepository.deleteById(id);
+        FolderDeleteUtil.deleteDishFolder(id);
     }
 }

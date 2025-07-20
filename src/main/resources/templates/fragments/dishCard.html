@@ -21,7 +21,7 @@
             <span th:each="i : ${#numbers.sequence(1,5)}">
                 <i th:class="${dish.averageRating >= i ? 'fa fa-star text-warning' : 'fa fa-star-o text-warning'}"></i>
             </span>
-            <a th:href="@{'/dishes/' + ${dish.id} + '/reviews?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory}}"
+            <a th:href="@{'/dishes/' + ${dish.id} + '/reviews?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageNo=' + ${currentPage} + '&pageSize=' + ${pageSize}}"
                class="ms-2 link-light"
                th:text="${dish.reviewCount == 0 ? 'No Reviews' : dish.reviewCount + ' Reviews'}">Reviews</a>
         </div>
