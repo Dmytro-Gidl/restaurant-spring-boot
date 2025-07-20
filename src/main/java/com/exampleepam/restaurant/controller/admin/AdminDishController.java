@@ -69,10 +69,13 @@ public class AdminDishController extends BaseController {
                                 @RequestParam(PAGE_SIZE_PARAM) int pageSize,
                                 @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
                                 Model model) {
-        Paged<DishResponseDto> pagedOrder = dishService.findPaginated(pageNo, pageSize,
-                sortField, sortDir, filterCategory);
+        String normalizedCategory = filterCategory == null ? DEFAULT_FILTER_CATEGORY
+                : filterCategory.replace("\"", "").toLowerCase();
 
-        model.addAttribute(FILTER_CATEGORY_PARAM, filterCategory);
+        Paged<DishResponseDto> pagedOrder = dishService.findPaginated(pageNo, pageSize,
+                sortField, sortDir, normalizedCategory);
+
+        model.addAttribute(FILTER_CATEGORY_PARAM, normalizedCategory);
         model.addAttribute(CURRENT_PAGE_PARAM, pageNo);
 
         model.addAttribute(SORT_FIELD_PARAM, sortField);

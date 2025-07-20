@@ -6,5 +6,11 @@ package com.exampleepam.restaurant.entity;
 public enum Category {
     DRINKS,
     BURGERS,
-    SNACKS
+    SNACKS,
+    PIZZA,
+    ROLLS,
+    SETS,
+    SALADS,
+    SOUPS,
+    DESSERTS
 }

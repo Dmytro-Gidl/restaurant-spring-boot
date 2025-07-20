@@ -14,7 +14,7 @@
     <style>
         body {
             background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
-            url('../images/saveInPhotoshop.png') no-repeat center center;
+            url('/images/saveInPhotoshop.png') no-repeat center center;
             background-size: cover;
             color: #333;
         }
@@ -38,6 +38,10 @@
         }
         .order-card:hover {
             transform: translateY(-3px);
+        }
+        .active-order-card {
+            border: 2px solid #ffc107;
+            box-shadow: 0 0 8px rgba(255,193,7,0.7);
         }
         .order-card .card-header {
             background: #f8f9fa;
@@ -125,7 +129,8 @@
 
     <!-- Masonry Container for Order Cards -->
     <div class="masonry">
-        <div th:each="order : ${orderList.page.content}" class="order-card">
+        <div th:each="order : ${orderList.page.content}" class="order-card"
+             th:classappend="${order.status.name() == 'COMPLETED' || order.status.name() == 'DECLINED'} ? '' : 'active-order-card'">
             <div class="card">
                 <!-- Card Header: Order Info -->
                 <div class="card-header">
@@ -134,7 +139,7 @@
                         <small class="text-muted" th:text="${#temporals.format(order.creationDateTime, 'dd-MM-yyyy HH:mm')}"></small>
                     </div>
                     <span class="badge" th:text="${order.status}"
-                          th:classappend="${order.status.equals('COMPLETED') ? ' bg-success' : ' bg-secondary'}">
+                          th:classappend="${order.status.name() == 'COMPLETED' ? ' bg-success' : (order.status.name() == 'DECLINED' ? ' bg-danger' : ' bg-warning')}">
             </span>
                 </div>
                 <!-- Card Body: Order Summary and Dish Items -->

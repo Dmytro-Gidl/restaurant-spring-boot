@@ -7,6 +7,7 @@ window.addEventListener('DOMContentLoaded', function() {
     var images = [];
     var index = 0;
     var dishName = '';
+    var dishDescription = '';
 
     document.querySelectorAll('.single-menu img').forEach(function(img) {
         img.addEventListener('click', function(event) {
@@ -15,6 +16,7 @@ window.addEventListener('DOMContentLoaded', function() {
             var imagesAttr = menu.getAttribute('data-images');
             if(!imagesAttr) return;
             dishName = menu.getAttribute('data-dish-name') || '';
+            dishDescription = menu.getAttribute('data-dish-description') || '';
             images = imagesAttr.split(',');
             index = 0;
             show();
@@ -34,6 +36,11 @@ window.addEventListener('DOMContentLoaded', function() {
         counter.classList.add('image-counter');
         counter.textContent = (index + 1) + '/' + images.length;
         content.appendChild(counter);
+
+        var desc = document.createElement('div');
+        desc.classList.add('overlay-description');
+        desc.textContent = dishDescription;
+        content.appendChild(desc);
 
         if(prevBtn) prevBtn.style.visibility = index > 0 ? 'visible' : 'hidden';
         if(nextBtn) nextBtn.style.visibility = index < images.length - 1 ? 'visible' : 'hidden';
