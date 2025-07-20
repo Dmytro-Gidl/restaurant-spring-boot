@@ -269,3 +269,17 @@ input::-webkit-inner-spin-button {
     text-align: center;
     margin-top: 0.5rem;
 }
+
+.pagination {
+    justify-content: center;
+}
+.pagination .page-link {
+    color: #fff;
+    background-color: #343a40;
+    border-color: #343a40;
+}
+.pagination .page-item.active .page-link {
+    background-color: #000;
+    border-color: #000;
+    color: #fff;
+}

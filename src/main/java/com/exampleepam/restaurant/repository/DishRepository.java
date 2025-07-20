@@ -19,4 +19,8 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     Page<Dish> findAllByArchivedFalse(Pageable pageable);
 
     List<Dish> findAllByArchivedFalse(Sort sort);
+
+    Page<Dish> findAllByArchivedTrue(Pageable pageable);
+
+    List<Dish> findAllByArchivedTrue(Sort sort);
 }

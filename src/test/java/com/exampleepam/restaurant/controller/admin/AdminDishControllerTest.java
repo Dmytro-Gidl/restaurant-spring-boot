@@ -107,6 +107,20 @@ public class AdminDishControllerTest {
     }
 
     @Test
+    void saveNewDishValidationFail() throws Exception {
+        DishCreationDto invalidDto = new DishCreationDto();
+
+        mockMvc.perform(MockMvcRequestBuilders.multipart("/admin/dishes")
+                        .flashAttr("dish", invalidDto)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("dish-add"))
+                .andExpect(model().attributeExists("categories"));
+
+        Mockito.verify(dishService, Mockito.never()).saveWithFiles(Mockito.any(), Mockito.anyList());
+    }
+
+    @Test
     void deleteDish() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.delete("/admin/dishes/10/page/5")
                         .param("sortField", "category")
@@ -117,6 +131,30 @@ public class AdminDishControllerTest {
                 .andExpect(status()
                         .is3xxRedirection());
         Mockito.verify(dishService, Mockito.times(1)).deleteDishById(10);
+    }
+
+    @Test
+    void restoreDish() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.put("/admin/dishes/15/restore/page/2")
+                        .param("sortField", "name")
+                        .param("sortDir", "asc")
+                        .param("filterCategory", "archived")
+                        .param("pageSize", "10")
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        Mockito.verify(dishService, Mockito.times(1)).restoreDishById(15);
+    }
+
+    @Test
+    void hardDeleteDish() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/admin/dishes/20/hard-delete/page/1")
+                        .param("sortField", "name")
+                        .param("sortDir", "asc")
+                        .param("filterCategory", "archived")
+                        .param("pageSize", "10")
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        Mockito.verify(dishService, Mockito.times(1)).hardDeleteDish(20);
     }
 
     @Test

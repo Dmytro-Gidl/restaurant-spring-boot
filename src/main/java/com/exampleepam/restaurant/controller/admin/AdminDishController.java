@@ -100,6 +100,7 @@ public class AdminDishController extends BaseController {
                               Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute(DISH_ATTRIBUTE_NAME, dishCreationDto);
+            model.addAttribute("categories", CategoryDto.values());
             return DISH_ADD_PAGE;
         }
 
@@ -133,6 +134,46 @@ public class AdminDishController extends BaseController {
     ) {
         dishService.deleteDishById(id);
 
+
+        String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
+                .queryParam(SORT_FIELD_PARAM, sortField)
+                .queryParam(SORT_DIR_PARAM, sortDir)
+                .queryParam(PAGE_SIZE_PARAM, pageSize)
+                .queryParam(FILTER_CATEGORY_PARAM, filterCategory)
+                .buildAndExpand(pageNo)
+                .toUriString();
+        return "redirect:" + redirectLink;
+    }
+
+    @PutMapping("/{id}/restore/page/{page}")
+    public String restoreDish(
+            @PathVariable("id") long id,
+            @PathVariable("page") int pageNo,
+            @RequestParam(SORT_FIELD_PARAM) String sortField,
+            @RequestParam(SORT_DIR_PARAM) String sortDir,
+            @RequestParam(PAGE_SIZE_PARAM) int pageSize,
+            @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory) {
+        dishService.restoreDishById(id);
+
+        String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
+                .queryParam(SORT_FIELD_PARAM, sortField)
+                .queryParam(SORT_DIR_PARAM, sortDir)
+                .queryParam(PAGE_SIZE_PARAM, pageSize)
+                .queryParam(FILTER_CATEGORY_PARAM, filterCategory)
+                .buildAndExpand(pageNo)
+                .toUriString();
+        return "redirect:" + redirectLink;
+    }
+
+    @DeleteMapping("/{id}/hard-delete/page/{page}")
+    public String hardDeleteDish(
+            @PathVariable("id") long id,
+            @PathVariable("page") int pageNo,
+            @RequestParam(SORT_FIELD_PARAM) String sortField,
+            @RequestParam(SORT_DIR_PARAM) String sortDir,
+            @RequestParam(PAGE_SIZE_PARAM) int pageSize,
+            @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory) {
+        dishService.hardDeleteDish(id);
 
         String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
                 .queryParam(SORT_FIELD_PARAM, sortField)

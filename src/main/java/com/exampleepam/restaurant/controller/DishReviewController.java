@@ -33,6 +33,8 @@ public class DishReviewController extends BaseController {
                                   @RequestParam(value = SORT_FIELD_PARAM, required = false, defaultValue = "name") String sortField,
                                   @RequestParam(value = SORT_DIR_PARAM, required = false, defaultValue = ASCENDING_ORDER_SORTING) String sortDir,
                                   @RequestParam(value = FILTER_CATEGORY_PARAM, required = false, defaultValue = "all") String filterCategory,
+                                  @RequestParam(value = PAGE_NUMBER_PARAM, required = false, defaultValue = "1") int menuPage,
+                                  @RequestParam(value = PAGE_SIZE_PARAM, required = false, defaultValue = "6") int menuPageSize,
                                   Model model) {
         DishResponseDto dish = dishService.getDishById(dishId);
         dish.setAverageRating(reviewService.getAverageRatingForDish(dishId));
@@ -44,6 +46,8 @@ public class DishReviewController extends BaseController {
         model.addAttribute(SORT_FIELD_PARAM, sortField);
         model.addAttribute(SORT_DIR_PARAM, sortDir);
         model.addAttribute(FILTER_CATEGORY_PARAM, filterCategory);
+        model.addAttribute(PAGE_NUMBER_PARAM, menuPage);
+        model.addAttribute(PAGE_SIZE_PARAM, menuPageSize);
         return "dish-reviews";
     }
 }

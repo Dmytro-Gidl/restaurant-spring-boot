@@ -72,14 +72,14 @@
     </div>
 
     <!--MENU-->
-    <div th:if="${dishList.size() > 0}">
+    <div th:if="${dishList.page.content.size() > 0}">
         <form
               th:action="@{/orders}"
               th:object="${orderCreationDto}"
               method="post">
 
             <div class="menu">
-                <div th:each="dish : ${dishList}">
+                <div th:each="dish : ${dishList.page}">
                     <div th:replace="fragments/dishCard :: dishCard(dish=${dish})"></div>
                 </div>
             </div>
@@ -92,11 +92,37 @@
 
             <!-- Address input removed: users provide address on the checkout page -->
         </form>
+        <nav aria-label="Page navigation" class="paging col mt-3">
+            <ul class="pagination" th:if="${dishList.page.totalPages > 1}">
+                <li class="page-item" th:classappend="${!dishList.paging.prevEnabled? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="@{'/menu?pageNo=' + (${dishList.paging.pageNumber - 1}) + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}"
+                       tabindex="-1" th:text="#{pagination.previous}">Previous</a>
+                </li>
+                <th:block th:each="item : ${dishList.paging.items}">
+                    <li class="page-item"
+                        th:classappend="${item.index == dishList.paging.pageNumber? 'active' : ''}"
+                        th:if="${item.pageItemType.name() == 'PAGE'}">
+                        <a class="page-link"
+                           th:href="@{'/menu?pageNo=' + ${item.index} + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}"
+                           th:text="${item.index}"></a>
+                    </li>
+                    <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
+                        <a class="page-link" href="#">...</a>
+                    </li>
+                </th:block>
+                <li class="page-item" th:classappend="${!dishList.paging.nextEnabled? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="@{'/menu?pageNo=' + (${dishList.paging.pageNumber + 1}) + '&sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&filterCategory=' + ${filterCategory} + '&pageSize=' + ${pageSize}}"
+                       th:text="#{pagination.next}">Next</a>
+                </li>
+            </ul>
+        </nav>
     </div>
 </div>
 
 <!-- If no dishes exist -->
-<div th:unless="${dishList.size() != 0}" class="text-center">
+<div th:unless="${dishList.page.totalElements != 0}" class="text-center">
     <p th:text="#{the.category.empty}" class="display-2 text-white">Menu is in development.</p>
     <p th:text="#{choose.another}" class="display-2 text-white">Choose another one or come back later.</p>
     <p class="display-2 text-white">:(</p>
