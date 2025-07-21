@@ -4,6 +4,7 @@ import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.dto.order.OrderCreationDto;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.DishService;
+import com.exampleepam.restaurant.service.RecommendationService;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * Dish Controller for Users
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class DishController extends BaseController {
 
   private final DishService dishService;
+  private final RecommendationService recommendationService;
 
   private static final String DEFAULT_SORT_FIELD = "name";
   private static final String DEFAULT_SORT_DIR = ASCENDING_ORDER_SORTING;
@@ -27,8 +30,10 @@ public class DishController extends BaseController {
   private static final int DEFAULT_PAGE_SIZE = 6;
 
   @Autowired
-  public DishController(DishService dishService) {
+  public DishController(DishService dishService,
+                        RecommendationService recommendationService) {
     this.dishService = dishService;
+    this.recommendationService = recommendationService;
   }
 
 
@@ -69,7 +74,27 @@ public class DishController extends BaseController {
     model.addAttribute(REVERSE_SORT_DIR_PARAM,
         sortDir.equals(ASCENDING_ORDER_SORTING) ? DESCENDING_ORDER_SORTING
             : ASCENDING_ORDER_SORTING);
+
+    if (user != null) {
+      var recommended = recommendationService.getRecommendedDishes(user.getUserId(), 5);
+      model.addAttribute("recommendedDishes", recommended);
+    }
+
     return MENU_PAGE;
+  }
+
+  /**
+   * Return recommended dishes for the authenticated user as JSON.
+   */
+  @GetMapping("/api/recommendations")
+  @ResponseBody
+  public java.util.List<DishResponseDto> getRecommendations(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @RequestParam(value = "limit", defaultValue = "5") int limit) {
+    if (user == null) {
+      return java.util.List.of();
+    }
+    return recommendationService.getRecommendedDishes(user.getUserId(), limit);
   }
 
   private int parseOrDefault(String value, int defaultValue) {
