@@ -258,10 +258,10 @@
         });
     }
 
-    document.getElementById('reviewBackground').addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const container = document.querySelector('.review-container');
         if (container && !container.contains(e.target)) {
-            window.location.href = '/menu';
+            window.location.href = '/orders/history';
         }
     });
 </script>

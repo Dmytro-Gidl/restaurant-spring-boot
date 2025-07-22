@@ -126,7 +126,8 @@ public class ReviewService {
 
     public Paged<ReviewDto> getPaginatedReviewsForDish(Long dishId, int page, int size, String sort) {
         Sort sortObj = switch (sort) {
-            case "rating" -> Sort.by(Sort.Direction.DESC, "rating");
+            case "highest" -> Sort.by(Sort.Direction.DESC, "rating");
+            case "lowest" -> Sort.by(Sort.Direction.ASC, "rating");
             default -> Sort.by(Sort.Direction.DESC, "creationDateTime");
         };
         Pageable pageable = PageRequest.of(page - 1, size, sortObj);

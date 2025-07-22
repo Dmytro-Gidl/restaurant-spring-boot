@@ -35,6 +35,7 @@ public class DishReviewController extends BaseController {
                                   @RequestParam(value = FILTER_CATEGORY_PARAM, required = false, defaultValue = "all") String filterCategory,
                                   @RequestParam(value = PAGE_NUMBER_PARAM, required = false, defaultValue = "1") int menuPage,
                                   @RequestParam(value = PAGE_SIZE_PARAM, required = false, defaultValue = "6") int menuPageSize,
+                                  @RequestParam(value = "backUrl", required = false, defaultValue = "") String backUrl,
                                   Model model) {
         DishResponseDto dish = dishService.getDishById(dishId);
         dish.setAverageRating(reviewService.getAverageRatingForDish(dishId));
@@ -48,6 +49,7 @@ public class DishReviewController extends BaseController {
         model.addAttribute(FILTER_CATEGORY_PARAM, filterCategory);
         model.addAttribute(PAGE_NUMBER_PARAM, menuPage);
         model.addAttribute(PAGE_SIZE_PARAM, menuPageSize);
+        model.addAttribute("backUrl", backUrl);
         return "dish-reviews";
     }
 }
