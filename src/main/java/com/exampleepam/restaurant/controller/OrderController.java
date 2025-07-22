@@ -10,6 +10,7 @@ import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.DishService;
 import com.exampleepam.restaurant.service.OrderService;
 import com.exampleepam.restaurant.service.UserService;
+import com.exampleepam.restaurant.service.RecommendationService;
 import java.util.Map;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpSession;
@@ -54,16 +55,18 @@ public class OrderController extends BaseController {
   private OrderService orderService;
   private DishService dishService;
   private UserService userService;
+  private RecommendationService recommendationService;
 
   @Value("${google.maps.api-key}")
   private String googleMapsApiKey;
 
   @Autowired
   public OrderController(OrderService orderService, DishService dishService,
-      UserService userService) {
+      UserService userService, RecommendationService recommendationService) {
     this.orderService = orderService;
     this.dishService = dishService;
     this.userService = userService;
+    this.recommendationService = recommendationService;
   }
 
   private void fillMenuModelWithData(Model model) {
@@ -152,10 +155,14 @@ public class OrderController extends BaseController {
   }
 
   @GetMapping("/checkout")
-  public String showCheckoutPage(Model model) {
+  public String showCheckoutPage(@AuthenticationPrincipal AuthenticatedUser user, Model model) {
     // Populate the model with a new order DTO.
     model.addAttribute("orderCreationDto", new OrderCreationDto());
     model.addAttribute("googleApiKey", googleMapsApiKey);
+    if (user != null) {
+      var rec = recommendationService.getRecommendedDishes(user.getUserId(), 5);
+      model.addAttribute("recommendedDishes", rec);
+    }
     return "checkout"; // returns checkout.html view
   }
 }

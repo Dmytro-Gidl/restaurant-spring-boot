@@ -141,9 +141,10 @@ body {
 
 .myContainer {
     width: 100px;
-    top: 50%;
-    left: 50%;
     display: flex;
+    justify-content: center;
+    margin-left: auto !important;
+    margin-right: auto !important;
     border-radius: 45px;
     box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);
 }

@@ -61,8 +61,12 @@ public class DishController extends BaseController {
     String normalizedSortField = sortField == null ? DEFAULT_SORT_FIELD
         : sortField.replace("\"", "").trim();
 
+    String normalizedSortDir = DESCENDING_ORDER_SORTING.equalsIgnoreCase(sortDir)
+        ? DESCENDING_ORDER_SORTING
+        : ASCENDING_ORDER_SORTING;
+
     Paged<DishResponseDto> dishPaged = dishService.findPaginated(pageNo, pageSize,
-        normalizedSortField, sortDir, normalizedCategory);
+        normalizedSortField, normalizedSortDir, normalizedCategory);
 
     model.addAttribute(FILTER_CATEGORY_PARAM, normalizedCategory);
     model.addAttribute(CURRENT_PAGE_PARAM, pageNo);
@@ -70,9 +74,9 @@ public class DishController extends BaseController {
     model.addAttribute(new OrderCreationDto());
     model.addAttribute(DISH_LIST_ATTRIBUTE, dishPaged);
     model.addAttribute(SORT_FIELD_PARAM, normalizedSortField);
-    model.addAttribute(SORT_DIR_PARAM, sortDir);
+    model.addAttribute(SORT_DIR_PARAM, normalizedSortDir);
     model.addAttribute(REVERSE_SORT_DIR_PARAM,
-        sortDir.equals(ASCENDING_ORDER_SORTING) ? DESCENDING_ORDER_SORTING
+        normalizedSortDir.equals(ASCENDING_ORDER_SORTING) ? DESCENDING_ORDER_SORTING
             : ASCENDING_ORDER_SORTING);
 
     if (user != null) {

@@ -81,6 +81,176 @@
     .pac-container {
       z-index: 9999 !important;
     }
+
+    /* Recommended dishes styles */
+    .recommended-carousel {
+      position: relative;
+      background-color: rgba(255,119,32,0.05);
+      border-radius: 4px;
+      padding: 0.5rem 2rem 1rem;
+      margin-top: 1.5rem;
+    }
+    .rec-heading {
+      color: #ff7720;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+    .rec-section {
+      margin-top: 2rem;
+      text-align: center;
+    }
+    .rec-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ff7720;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .rec-toggle i {
+      transition: transform 0.3s ease;
+    }
+    .recommended-carousel.collapsed {
+      display: none;
+    }
+    .rec-wrapper {
+      display: flex;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      gap: 16px;
+      justify-content: center;
+    }
+    .rec-item .single-menu {
+      width: 240px;
+      border: 1px solid #ddd;
+      background-color: #fff;
+      position: relative;
+      transition: transform 0.3s;
+    }
+    .rec-item .link-light {
+      color: #000;
+    }
+    .rec-item .single-menu:hover {
+      transform: translateY(-4px);
+    }
+    .rec-item.added .single-menu {
+      border: 2px solid #28a745;
+      box-shadow: 0 0 8px rgba(40,167,69,0.7);
+    }
+    .rec-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #ff7720;
+      color: #fff;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      opacity: 0.85;
+    }
+    .rec-prev { left: 4px; }
+    .rec-next { right: 4px; }
+
+    .single-menu {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .single-menu img {
+      max-width: 160px;
+      margin: 0 auto 10px auto;
+      border-radius: 50%;
+      border: 1px solid #ddd;
+      padding: 3px;
+    }
+    .single-menu h4 {
+      text-transform: capitalize;
+      font-size: 20px;
+      border-bottom: 1px dashed #333;
+      margin-bottom: 5px;
+      padding-bottom: 5px;
+    }
+    .single-menu h4 span {
+      display: block;
+      color: #ff7720;
+      font-style: italic;
+    }
+    .menu-description {
+      width: 100%;
+    }
+    .myContainer {
+      width: 100px;
+      display: flex;
+      justify-content: center;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      border-radius: 45px;
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.05);
+    }
+    .rec-item .myContainer {
+      display: none;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+      text-align: center;
+      font-size: 20px;
+      border: none;
+      background-color: #e0e0e0;
+      color: #302020;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .myContainer button {
+      color: #ff7720;
+      background-color: #d3d2d2;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .decrement {
+      padding: 10px 5px 10px 20px;
+      border-radius: 45px 0 0 45px;
+    }
+    .increment {
+      padding: 10px 20px 10px 5px;
+      border-radius: 0 45px 45px 0;
+    }
+    .star-display .fa {
+      color: #FFD700;
+      margin-right: 2px;
+    }
+    .add-rec-btn {
+      margin-top: 8px;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+    .add-rec-btn.added {
+      background-color: #28a745;
+      border-color: #28a745;
+      color: #fff;
+    }
+    .add-rec-btn.animate {
+      animation: pop 0.4s ease;
+    }
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
   </style>
   <!-- Google Places API -->
   <script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&libraries=places|}" async defer></script>
@@ -149,6 +319,23 @@
       </div>
     </div>
   </div>
+
+  <div th:if="${recommendedDishes != null and #lists.size(recommendedDishes) > 0}" class="rec-section">
+    <button type="button" class="rec-toggle">
+      <span>You should also try</span>
+      <i class="fa fa-chevron-down"></i>
+    </button>
+    <div class="recommended-carousel collapsed">
+      <h5 class="rec-heading text-center">You should also try</h5>
+      <button type="button" class="rec-nav rec-prev"><i class="fa fa-chevron-left"></i></button>
+      <button type="button" class="rec-nav rec-next"><i class="fa fa-chevron-right"></i></button>
+      <div class="rec-wrapper">
+        <div th:each="dish : ${recommendedDishes}" class="rec-item">
+          <div th:replace="fragments/dishCard :: dishCard(dish=${dish}, backUrl='/orders/checkout')"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Bootstrap JS Bundle -->
@@ -193,7 +380,11 @@
       enforceAutocompleteSelection(event);
     });
     loadCart();
+    loadRecAdded();
     renderOrderItems();
+    initRecAddButtons();
+    filterRecommended();
+    if (typeof updateRecNavVisibility === 'function') updateRecNavVisibility();
   });
 
   // ------------------
@@ -208,6 +399,21 @@
   }
   function saveCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
+  }
+
+  let recAdded = {};
+  function loadRecAdded() {
+    const saved = localStorage.getItem('recAdded');
+    if (saved) {
+      try {
+        recAdded = JSON.parse(saved);
+      } catch (e) {
+        recAdded = {};
+      }
+    }
+  }
+  function saveRecAdded() {
+    localStorage.setItem('recAdded', JSON.stringify(recAdded));
   }
   function calcOrder() {
     let total = 0;
@@ -264,6 +470,7 @@
       orderItemsBody.appendChild(row);
     });
     document.getElementById('orderTotal').textContent = total.toFixed(2);
+    filterRecommended();
   }
   function updateQuantity(dishId, newQty) {
     if (newQty <= 0) {
@@ -279,6 +486,49 @@
     saveCart();
     renderOrderItems();
   }
+  function initRecAddButtons() {
+    document.querySelectorAll('.rec-item').forEach(item => {
+      const card = item.querySelector('.single-menu');
+      if (!card) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-outline-primary add-rec-btn';
+      btn.innerHTML = '<i class="fa fa-plus"></i>';
+      card.appendChild(btn);
+      item.dataset.added = 'false';
+
+      btn.addEventListener('click', () => {
+        const id = card.dataset.dishId;
+        const name = card.dataset.dishName;
+        const price = parseFloat(card.dataset.dishPrice);
+        if (item.dataset.added === 'true') {
+          delete cart[id];
+          delete recAdded[id];
+          item.dataset.added = 'false';
+          item.classList.remove('added');
+          btn.innerHTML = '<i class="fa fa-plus"></i>';
+          btn.classList.remove('added');
+          btn.classList.add('btn-outline-primary');
+        } else {
+          if (!cart[id]) {
+            cart[id] = { name: name, price: price, quantity: 1 };
+          } else {
+            cart[id].quantity += 1;
+          }
+          recAdded[id] = true;
+          item.dataset.added = 'true';
+          item.classList.add('added');
+          btn.innerHTML = '<i class="fa fa-check"></i>';
+          btn.classList.add('added', 'animate');
+          btn.classList.remove('btn-outline-primary');
+          setTimeout(() => btn.classList.remove('animate'), 400);
+        }
+        saveRecAdded();
+        saveCart();
+        renderOrderItems();
+      });
+    });
+  }
   // ------------------
   // Update Hidden Inputs for dishIdQuantityMap
   // ------------------
@@ -293,6 +543,37 @@
       dishHiddenInputsContainer.appendChild(input);
     }
   }
+
+  function filterRecommended() {
+    document.querySelectorAll('.rec-item').forEach(item => {
+      const card = item.querySelector('.single-menu');
+      if (!card) return;
+      const id = card.dataset.dishId;
+      const btn = item.querySelector('.add-rec-btn');
+      if (!btn) return;
+      if (cart[id]) {
+        if (recAdded[id]) {
+          item.style.display = '';
+          item.classList.add('added');
+          btn.innerHTML = '<i class="fa fa-check"></i>';
+          btn.classList.add('added');
+          btn.classList.remove('btn-outline-primary');
+          item.dataset.added = 'true';
+        } else {
+          item.style.display = 'none';
+        }
+      } else {
+        item.style.display = '';
+        item.classList.remove('added');
+        btn.innerHTML = '<i class="fa fa-plus"></i>';
+        btn.classList.remove('added');
+        btn.classList.add('btn-outline-primary');
+        item.dataset.added = 'false';
+      }
+    });
+    if (typeof updateRecNavVisibility === 'function') updateRecNavVisibility();
+  }
 </script>
+<script type="text/javascript" th:src="@{/js/recommended-carousel.js}"></script>
 </body>
 </html>

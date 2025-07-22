@@ -37,7 +37,7 @@
             <button type="button" class="rec-nav rec-next"><i class="fa fa-chevron-right"></i></button>
             <div class="rec-wrapper">
                 <div th:each="dish : ${recommendedDishes}" class="rec-item">
-                    <div th:replace="fragments/dishCard :: dishCard(dish=${dish})"></div>
+                    <div th:replace="fragments/dishCard :: dishCard(dish=${dish}, backUrl=${null})"></div>
                 </div>
             </div>
         </div>
@@ -109,7 +109,7 @@
 
                     <div class="menu">
                         <div th:each="dish : ${dishList.page}" class="menu-item">
-                            <div th:replace="fragments/dishCard :: dishCard(dish=${dish})"></div>
+                            <div th:replace="fragments/dishCard :: dishCard(dish=${dish}, backUrl=${null})"></div>
                         </div>
                     </div>
 
@@ -147,15 +147,13 @@
                 </li>
             </ul>
         </nav>
+            <div th:unless="${dishList.page.content.size() > 0}" class="text-center mt-4">
+                <p th:text="#{the.category.empty}" class="display-2 text-white">Menu is in development.</p>
+                <p th:text="#{choose.another}" class="display-2 text-white">Choose another one or come back later.</p>
+                <p class="display-2 text-white">:(</p>
+            </div>
+        </div>
     </div>
-    </div>
-
-<!-- If no dishes exist -->
-<div th:unless="${dishList.page.totalElements != 0}" class="text-center">
-    <p th:text="#{the.category.empty}" class="display-2 text-white">Menu is in development.</p>
-    <p th:text="#{choose.another}" class="display-2 text-white">Choose another one or come back later.</p>
-    <p class="display-2 text-white">:(</p>
-</div>
 
 <!-- BOTTOM-RIGHT PINNED CART -->
 <div id="bottom-right-cart">
