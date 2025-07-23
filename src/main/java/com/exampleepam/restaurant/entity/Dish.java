@@ -1,8 +1,6 @@
 package com.exampleepam.restaurant.entity;
 
 import lombok.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -43,6 +41,14 @@ public class Dish extends AbstractBaseEntity{
      */
     @Column(nullable = false)
     private boolean archived = false;
+
+    @OneToMany(
+            mappedBy = "dish",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @ToString.Exclude
+    private List<Review> reviews = new ArrayList<>();
 
     public Dish(long id, String name, String description, Category category, BigDecimal price, String imagePath) {
         this.id = id;
