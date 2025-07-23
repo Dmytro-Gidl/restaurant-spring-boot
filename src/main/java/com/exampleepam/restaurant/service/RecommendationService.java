@@ -119,6 +119,8 @@ public class RecommendationService {
     }
 
     private List<DishResponseDto> fallbackByCategory(long userId, Set<Long> excludeIds, int limit) {
+        // use a mutable copy so callers can pass immutable sets
+        Set<Long> excluded = new java.util.HashSet<>(excludeIds);
         List<DishResponseDto> result = new ArrayList<>();
         List<Object[]> preferredCats = reviewRepository.findPreferredCategories(userId);
         for (Object[] row : preferredCats) {
@@ -129,11 +131,11 @@ public class RecommendationService {
             assignReviewCounts(dtos);
             dtos.sort(Comparator.comparing(DishResponseDto::getAverageRating).reversed());
             for (DishResponseDto dto : dtos) {
-                if (excludeIds.contains(dto.getId())) {
+                if (excluded.contains(dto.getId())) {
                     continue;
                 }
                 result.add(dto);
-                excludeIds.add(dto.getId());
+                excluded.add(dto.getId());
                 if (result.size() >= limit) {
                     return result;
                 }
