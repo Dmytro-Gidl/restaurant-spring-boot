@@ -322,9 +322,10 @@ input::-webkit-inner-spin-button {
 /* Recommended carousel */
 .recommended-carousel {
     position: relative;
-    background-color: rgba(255,119,32,0.1);
-    border-radius: 4px;
-    padding: 0.5rem 2rem 1rem;
+    background: rgba(255,119,32,0.12);
+    border: 1px solid #ff7720;
+    border-radius: 8px;
+    padding: 1rem 2rem 1.5rem;
     margin-bottom: 2rem;
 }
 .rec-heading {
@@ -353,6 +354,23 @@ input::-webkit-inner-spin-button {
 .rec-toggle i {
     transition: transform 0.3s ease;
 }
+.rec-hint {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+    color: #ff7720;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+.rec-hint i {
+    animation: rec-bounce 1.6s infinite;
+}
+@keyframes rec-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+}
 .recommended-carousel.collapsed {
     display: none;
 }
@@ -360,13 +378,19 @@ input::-webkit-inner-spin-button {
     display: flex;
     overflow-x: auto;
     scroll-behavior: smooth;
-    gap: 16px;
+    gap: 20px;
     justify-content: center;
+    padding: 0.5rem 0 4px;
+    background: rgba(255,119,32,0.08);
+    border-radius: 6px;
 }
 .rec-item .single-menu {
-    width: 240px;
-    border-color: #ff7720;
-    background-color: #1b1b1b;
+    width: 220px;
+    background-color: #222;
+    border: 1px solid #ff7720;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
 }
 .rec-nav {
     position: absolute;
@@ -383,4 +407,42 @@ input::-webkit-inner-spin-button {
 }
 .rec-prev { left: 4px; }
 .rec-next { right: 4px; }
+
+/* compact dish cards inside recommended carousel */
+.rec-item .single-menu img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    margin: 0 auto 0.5rem;
+    border-radius: 50%;
+}
+
+.rec-item .single-menu h4 {
+    font-size: 1.1rem;
+    border: none;
+    padding-bottom: 0;
+    margin-bottom: 0.25rem;
+}
+
+.rec-item .single-menu p,
+.rec-item .star-display {
+    display: none;
+}
+
+.rec-item .myContainer {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.rec-item .myContainer button {
+    font-size: 24px;
+    padding: 8px 12px;
+}
+
+.rec-item .myContainer input {
+    font-size: 18px;
+    width: 50px;
+}
 

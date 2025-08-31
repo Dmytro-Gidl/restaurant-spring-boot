@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const prev = document.querySelector('.rec-prev');
     const next = document.querySelector('.rec-next');
     const toggle = document.querySelector('.rec-toggle');
+    const hint = document.querySelector('.rec-hint');
     const scrollAmount = 300;
     const storageKey = 'recOpen';
 
@@ -17,12 +18,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 icon.classList.add('fa-chevron-down');
                 icon.classList.remove('fa-chevron-up');
             }
+            if (hint) hint.style.display = '';
         } else if (open === 'true') {
             carousel.classList.remove('collapsed');
             if (icon) {
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
             }
+            if (hint) hint.style.display = 'none';
             updateNavVisibility();
         }
     }
@@ -55,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 icon.classList.toggle('fa-chevron-up');
             }
             localStorage.setItem(storageKey, String(open));
+            if (hint) hint.style.display = open ? 'none' : '';
             if (open) {
                 updateNavVisibility();
             }
