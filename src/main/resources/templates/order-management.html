@@ -1,238 +1,183 @@
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-            rel="stylesheet"
-            integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
-            crossorigin="anonymous"
-    />
-    <link rel="stylesheet" type="text/css" href="/css/table-manegement.css "/>
-
-    <script
-            src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
-            crossorigin="anonymous"
-    ></script>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
     <meta charset="UTF-8">
     <title>Order Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+            url('/images/saveInPhotoshop.png') no-repeat center center;
+            background-size: cover;
+            color: #333;
+        }
+        h1 { color: #fff; }
+        .masonry {
+            column-count: 3;
+            column-gap: 1rem;
+        }
+        .order-card {
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .order-card:hover { transform: translateY(-3px); }
+        .active-order-card {
+            border: 2px solid #ffc107;
+            box-shadow: 0 0 8px rgba(255,193,7,0.7);
+        }
+        .order-card .card-header {
+            background: #f8f9fa;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .order-card .card-header h5 { margin: 0; font-size: 1.25rem; }
+        .order-card .card-body { padding: 1rem; }
+        .order-summary p { margin-bottom: 0.5rem; }
+        .dish-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0.5rem;
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+        .dish-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        .dish-item .dish-info { margin-left: 10px; flex: 1; }
+        .dish-item .dish-info h6 { margin: 0; font-size: 1rem; font-weight: 600; }
+        .dish-item .dish-info p { margin: 0; font-size: 0.9rem; }
+    </style>
 </head>
-
 <body>
 <div th:replace="fragments/topnav :: navbar"></div>
-<div class="container my-2 text-light">
-    <h1 th:text="#{order.management.headline}">Order management</h1>
-    <div th:if="${orderList.page != 0}">
+<div class="container my-4">
+    <h1 class="mb-4 text-center" th:text="#{order.management.headline}">Order management</h1>
 
-        <div class="dropdown mb-3">
-            <a th:text="#{order.filter.status}"
-               class="btn btn-outline-light dropdown-toggle btn-md myFilterDropdown" role="button"
-               id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
-                Filter status
-            </a>
-
-            <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                <li>
-                    <a th:text="#{order.show.all}"
-                            th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='
-                + ${sortField} +'&sortDir=' + ${sortDir} + '&status=all' + '&pageSize=' + ${pageSize}}"
-                       class="dropdown-item">Show all</a></li>
-                <li>
-                    <a th:text="#{order.show.active}"
-                            th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='
-                + ${sortField} +'&sortDir=' + ${sortDir} + '&status=active' + '&pageSize=' + ${pageSize}}"
-                       class="dropdown-item">Show active</a></li>
-                <li>
-                <li>
-                    <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='
-                + ${sortField} +'&sortDir=' + ${sortDir} + '&status=pending' + '&pageSize=' + ${pageSize}}"
-                       class="dropdown-item">Pending</a></li>
-                <li>
-                    <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='
-                + ${sortField} +'&sortDir=' + ${sortDir} + '&status=cooking' + '&pageSize=' + ${pageSize}}"
-                       class="dropdown-item">Cooking</a></li>
-                <li>
-                    <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='
-                + ${sortField} +'&sortDir=' + ${sortDir} + '&status=delivering' + '&pageSize=' + ${pageSize}}"
-                       class="dropdown-item">Delivering</a></li>
-                <li>
-                    <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='
-                + ${sortField} +'&sortDir=' + ${sortDir} + '&status=completed' + '&pageSize=' + ${pageSize}}"
-                       class="dropdown-item">Completed</a></li>
-                <li>
-                    <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='
-                + ${sortField} +'&sortDir=' + ${sortDir} + '&status=declined' + '&pageSize=' + ${pageSize}}"
-                       class="dropdown-item">Declined</a></li>
-            </ul>
+    <div th:if="${orderList.page.content.size() > 0}">
+        <div class="d-flex justify-content-between mb-3">
+            <div class="dropdown me-2">
+                <a class="btn btn-outline-light dropdown-toggle" href="#" role="button" id="statusDropdown"
+                   data-bs-toggle="dropdown" aria-expanded="false"
+                   th:text="${status == 'all' ? #messages.msg('order.show.all') : (status == 'active' ? #messages.msg('order.show.active') : #strings.capitalize(status))}">
+                    Filter status
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="statusDropdown">
+                    <li><a class="dropdown-item" th:text="#{order.show.all}"
+                           th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=all' + '&pageSize=' + ${pageSize}}">Show all</a></li>
+                    <li><a class="dropdown-item" th:text="#{order.show.active}"
+                           th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=active' + '&pageSize=' + ${pageSize}}">Show active</a></li>
+                    <li><a class="dropdown-item" th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=pending' + '&pageSize=' + ${pageSize}}">Pending</a></li>
+                    <li><a class="dropdown-item" th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=cooking' + '&pageSize=' + ${pageSize}}">Cooking</a></li>
+                    <li><a class="dropdown-item" th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=delivering' + '&pageSize=' + ${pageSize}}">Delivering</a></li>
+                    <li><a class="dropdown-item" th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=completed' + '&pageSize=' + ${pageSize}}">Completed</a></li>
+                    <li><a class="dropdown-item" th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=declined' + '&pageSize=' + ${pageSize}}">Declined</a></li>
+                </ul>
+            </div>
+            <div class="dropdown">
+                <a class="btn btn-outline-light dropdown-toggle" href="#" role="button" id="pageSizeDropdown"
+                   data-bs-toggle="dropdown" aria-expanded="false" th:text="#{page.rows}">Rows per page</a>
+                <ul class="dropdown-menu" aria-labelledby="pageSizeDropdown">
+                    <li><a class="dropdown-item"
+                           th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=5'}">5</a></li>
+                    <li><a class="dropdown-item"
+                           th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=10'}">10</a></li>
+                    <li><a class="dropdown-item"
+                           th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=20'}">20</a></li>
+                    <li><a class="dropdown-item"
+                           th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=30'}">30</a></li>
+                </ul>
+            </div>
         </div>
 
-        <table class="table table-hover">
-            <thead>
-            <tr>
-                <th>
-                    <a class=" text-reset text-decoration-none">Id</a>
-                </th>
-                <th>
-                    <a th:text="#{order.status}"
-                            class=" text-reset"
-                       th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=status&sortDir='
-                   + ${reverseSortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}">
-                        Status</a>
-                </th>
-                <th>
-                    <a th:text="#{order.creation.date}"
-                            class=" text-reset"
-                       th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=creationDateTime&sortDir='
-                   + ${reverseSortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}">
-                        Creation date</a>
-                </th>
-                <th>
-                    <a th:text="#{order.update.date}"
-                            class=" text-reset"
-                       th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=updateDateTime&sortDir='
-                   + ${reverseSortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}">
-                        Update date</a>
-                </th>
-                <th>
-                    <a th:text="#{order.total.price}"
-                            class=" text-reset"
-                       th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=totalPrice&sortDir='
-                   + ${reverseSortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}">
-                        Total price</a>
-                </th>
-                <th>
-                    <a th:text="#{order.dish.quantity}"
-                            class=" text-reset text-decoration-none">Dish - Quantity </a>
-                </th>
-                <th>
-                    <a th:text="#{order.address}"
-                            class=" text-reset"
-                       th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField=address&sortDir='
-                   + ${reverseSortDir}+ '&status=' + ${status} + '&pageSize=' + ${pageSize}}">
-                        Address </a>
-                </th>
-                <th th:text="#{order.client.name}"> Client name</th>
-                <th th:text="#{table.actions}"> Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="order : ${orderList.page}">
-                <td th:text="${order.id}"></td>
-                <td th:text="${order.status}"></td>
-                <td th:text="${#temporals.format(order.creationDateTime, 'dd-MM-yyyy HH:mm')}"></td>
-                <td th:text="${#temporals.format(order.updateDateTime, 'dd-MM-yyyy HH:mm')}"></td>
-                <td th:text="${order.totalPrice}"></td>
-                <td>
-            <span th:each="orderItem : ${order.orderItems}">
-                <p>
-                <span th:text="${orderItem.dishName}"></span>
-                <span>-</span>
-                    <span th:text="${orderItem.dishesOrdered}"></span>
-                </p>
-                </span>
-                </td>
-                <td th:text="${order.address}"></td>
-                <td th:text="${order.clientName}"></td>
-
-                <td>
-                    <form th:if="${order.status.ordinal < 3}" class="d-inline"
-                          th:method="put"
-                          th:action="@{'/admin/orders/' + ${order.id} +'/next/page/' + ${currentPage}
-                          + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status='
-                     + ${status} + '&pageSize=' + ${pageSize}}">
-                        <button
-                                th:text="#{order.next.stage}"
-                                class="btn btn-primary" type="submit">Next stage</button>
-                    </form>
-                    <form th:if="${order.status.ordinal < 3}" class="d-inline"
-                          th:method="put"
-                          th:action="@{'/admin/orders/' + ${order.id} + '/decline/page/' + ${currentPage}
-                          + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status='
-                     + ${status} + '&pageSize=' + ${pageSize}}">
-                        <button
-                                th:text="#{order.decline}"
-                                class="btn btn-danger" type="submit">Decline</button>
-                    </form>
-
-
-
-                </td>
-            </tr>
-            </tbody>
-        </table>
-        <div class="row">
-
-            <div class="col">
-                <div class="dropdown">
-                    <a th:text="#{page.rows}"
-                       class="btn btn-outline-light dropdown-toggle btn-md myFilterDropdown" role="button"
-                       data-bs-toggle="dropdown" aria-expanded="false">
-                        Rows per page
-                    </a>
-
-                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                        <li>
-                            <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='+ ${sortField} +'&sortDir='
-                            + ${sortDir} + '&status=' + ${status} + '&pageSize=5'}"
-                               class="dropdown-item">5</a></li>
-                        <li>
-                        <li>
-                            <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='+ ${sortField} +'&sortDir='
-                            + ${sortDir} + '&status=' + ${status} + '&pageSize=10'}"
-                               class="dropdown-item">10</a></li>
-                        <li>
-                            <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='+ ${sortField} +'&sortDir='
-                            + ${sortDir} + '&status=' + ${status} + '&pageSize=20'}"
-                               class="dropdown-item">20</a></li>
-                        <li>
-                            <a th:href="@{'/admin/orders/page/' + ${currentPage} + '?sortField='+ ${sortField} +'&sortDir='
-                            + ${sortDir} + '&status=' + ${status} + '&pageSize=30'}"
-                               class="dropdown-item">30</a></li>
-                    </ul>
-
+        <div class="masonry">
+            <div th:each="order : ${orderList.page}" class="order-card"
+                 th:classappend="${order.status.name() == 'COMPLETED' || order.status.name() == 'DECLINED'} ? '' : 'active-order-card'">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h5>Order #<span th:text="${order.id}"></span></h5>
+                            <small class="text-muted" th:text="${#temporals.format(order.creationDateTime, 'dd-MM-yyyy HH:mm')}"></small>
+                        </div>
+                        <span class="badge" th:text="${order.status}"
+                              th:classappend="${order.status.name() == 'COMPLETED' ? ' bg-success' : (order.status.name() == 'DECLINED' ? ' bg-danger' : ' bg-warning')}"></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="order-summary mb-3">
+                            <p><strong>Address:</strong> <span th:text="${order.address}"></span></p>
+                            <p><strong>Total:</strong> <span th:text="${order.totalPrice}"></span></p>
+                            <p><strong>Client:</strong> <span th:text="${order.clientName}"></span></p>
+                            <p><strong>Updated:</strong> <span th:text="${#temporals.format(order.updateDateTime, 'dd-MM-yyyy HH:mm')}"></span></p>
+                        </div>
+                        <h6 class="mb-2">Dishes:</h6>
+                        <div th:each="item : ${order.orderItems}" class="dish-item">
+                            <div>
+                                <img th:if="${item.imagePath != null}" th:src="@{${item.imagePath}}" alt="Dish Image">
+                                <img th:if="${item.imagePath == null}" src="https://via.placeholder.com/60" alt="Placeholder">
+                            </div>
+                            <div class="dish-info">
+                                <h6 th:text="${item.dishName}">Dish Name</h6>
+                                <p>Price: <span th:text="${item.dishPrice}"></span></p>
+                                <p>Quantity: <span th:text="${item.dishesOrdered}"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <div th:if="${order.status.ordinal() < 3}">
+                            <form class="d-inline" th:method="put"
+                                  th:action="@{'/admin/orders/' + ${order.id} + '/next/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}">
+                                <button class="btn btn-primary btn-sm mb-1" th:text="#{order.next.stage}">Next stage</button>
+                            </form>
+                            <form class="d-inline" th:method="put"
+                                  th:action="@{'/admin/orders/' + ${order.id} + '/decline/page/' + ${currentPage} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}">
+                                <button class="btn btn-danger btn-sm mb-1" th:text="#{order.decline}">Decline</button>
+                            </form>
+                        </div>
+                        <form class="d-inline ms-auto" th:method="delete" th:action="@{'/admin/orders/' + ${order.id}}" onsubmit="return confirm('Are you sure?');">
+                            <button class="btn btn-outline-danger btn-sm" th:text="#{order.delete}">Delete</button>
+                        </form>
+                    </div>
                 </div>
             </div>
-
-            <nav aria-label="Page navigation" class="paging col">
-                <ul class="pagination" th:if="${orderList.page.totalPages > 1}">
-                    <li class="page-item" th:classappend="${!orderList.paging.isPrevEnabled()? 'disabled' : ''}">
-                        <a class="page-link"
-                           th:href="@{'/admin/orders/page/' + ${orderList.paging.pageNumber - 1} + '?sortField=' + ${sortField}
-                       + '&sortDir=' + ${sortDir} + '&status=' + ${status}  + '&pageSize=' + ${pageSize}}"
-                           tabindex="-1">Previous</a>
-                    </li>
-                    <th:block th:each="item : ${orderList.paging.getItems()}">
-                        <li class="page-item"
-                            th:classappend="${item.index == orderList.paging.pageNumber? 'active' : ''}"
-                            th:if="${item.pageItemType.name() == 'PAGE'}">
-                            <a class="page-link"
-                               th:href="@{'/admin/orders/page/' + ${item.index} + '?sortField=' + ${sortField}
-                           + '&sortDir=' + ${sortDir} + '&status=' + ${status}  + '&pageSize=' + ${pageSize}}"
-
-                               th:text="${item.index}"></a>
-                        </li>
-                        <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
-                            <a class="page-link" href="#">...</a>
-                        </li>
-                    </th:block>
-                    <li class="page-item" th:classappend="${!orderList.paging.isNextEnabled()? 'disabled' : ''}">
-                        <a class="page-link"
-                           th:href="@{'/admin/orders/page/' + ${orderList.paging.pageNumber + 1}  + '?sortField=' + ${sortField}
-                          + '&sortDir=' + ${sortDir} + '&status=' + ${status}  + '&pageSize=' + ${pageSize}}"
-                        >Next</a>
-                    </li>
-                </ul>
-            </nav>
         </div>
 
+        <nav aria-label="Page navigation" class="mt-4" th:if="${orderList.paging.totalPages > 1}">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${!orderList.paging.isPrevEnabled() ? 'disabled' : ''}">
+                    <a class="page-link" th:href="@{'/admin/orders/page/' + (${orderList.paging.pageNumber} - 1) + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}">Previous</a>
+                </li>
+                <th:block th:each="item : ${orderList.paging.getItems()}">
+                    <li class="page-item" th:if="${item.pageItemType.name() == 'PAGE'}" th:classappend="${item.index == orderList.paging.pageNumber ? 'active' : ''}">
+                        <a class="page-link" th:href="@{'/admin/orders/page/' + ${item.index} + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}" th:text="${item.index}"></a>
+                    </li>
+                    <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}"><a class="page-link" href="#">...</a></li>
+                </th:block>
+                <li class="page-item" th:classappend="${!orderList.paging.isNextEnabled() ? 'disabled' : ''}">
+                    <a class="page-link" th:href="@{'/admin/orders/page/' + (${orderList.paging.pageNumber} + 1) + '?sortField=' + ${sortField} + '&sortDir=' + ${sortDir} + '&status=' + ${status} + '&pageSize=' + ${pageSize}}">Next</a>
+                </li>
+            </ul>
+        </nav>
     </div>
 </div>
-<div th:unless="${orderList.page != 0}" class="text-center no-data-block">
+<div th:unless="${orderList.page.content.size() > 0}" class="text-center no-data-block">
     <p class="display-2 text-white">We currently have no active orders.</p>
     <p class="display-4 text-white">Order history is also empty.</p>
-
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 </body>
 </html>
