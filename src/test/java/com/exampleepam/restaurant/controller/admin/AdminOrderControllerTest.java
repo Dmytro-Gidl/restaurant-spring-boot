@@ -51,6 +51,21 @@ public class AdminOrderControllerTest {
                         .with(csrf()));
         Mockito.verify(orderService, Mockito.times(1)).delete(5);
     }
+
+    @Test
+    void getOrdersDefaultUsesActiveStatus() throws Exception {
+        Mockito.when(orderService.findPaginated(1, 10, "creationDateTime", "desc", "active"))
+                .thenReturn(getOrderResponseDtosPaged());
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/admin/orders")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("order-management"))
+                .andExpect(model().attribute("status", "active"));
+
+        Mockito.verify(orderService, Mockito.times(1))
+                .findPaginated(1, 10, "creationDateTime", "desc", "active");
+    }
     @Test
      void findPaginated() throws Exception {
         String sortField = "category";

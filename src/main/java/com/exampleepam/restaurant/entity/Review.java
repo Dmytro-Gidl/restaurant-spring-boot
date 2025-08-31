@@ -28,6 +28,7 @@ public class Review extends AbstractBaseEntity {
     private Dish dish;
 
     @OneToOne
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
