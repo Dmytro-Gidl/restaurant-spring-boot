@@ -33,7 +33,7 @@ public class AdminOrderController extends BaseController {
 
     private static final String ORDER_MANAGEMENT_PAGE = "order-management";
     private static final String REDIRECT_TO_ADMIN_ORDERS = "redirect:/admin/orders";
-    private static final String DEFAULT_STATUS = "all";
+    private static final String DEFAULT_STATUS = "active";
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final String ORDER_ID_PARAM = "orderId";
     private static final String ACTION_PARAM = "action";

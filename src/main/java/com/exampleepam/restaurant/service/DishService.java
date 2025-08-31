@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 
@@ -64,19 +66,23 @@ public class DishService {
 
         Page<Dish> dishPage;
 
-        if (category.equals("archived")) {
+        String cat = category == null ? CATEGORY_ALL : category.replace("\"", "");
+
+        if (cat.equalsIgnoreCase("archived")) {
             dishPage = dishRepository.findAllByArchivedTrue(pageable);
-        } else if (category.equals(CATEGORY_ALL)) {
+        } else if (cat.equalsIgnoreCase(CATEGORY_ALL)) {
             dishPage = dishRepository.findAllByArchivedFalse(pageable);
         } else {
             dishPage = dishRepository
-                    .findPagedByCategoryAndArchivedFalse(Category.valueOf(category.toUpperCase(Locale.ENGLISH)), pageable);
+                    .findPagedByCategoryAndArchivedFalse(
+                            Category.valueOf(cat.trim().toUpperCase(Locale.ENGLISH)), pageable);
         }
 
         Page<DishResponseDto> dishResponseDtoPage = dishPage
                 .map(dishMapper::toDishResponseDto)
                 .map(dto -> {
                     setAverageRating(dto);
+                    setReviewCount(dto);
                     return dto;
                 });
 

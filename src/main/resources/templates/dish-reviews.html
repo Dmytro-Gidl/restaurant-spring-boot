@@ -64,7 +64,7 @@
 <body>
 <div th:replace="fragments/topnav :: navbar"></div>
 
-<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins" id="reviewsBackground">
+<div class="page-wrapper bg-gra-02 p-t-130 p-b-100 font-poppins" id="reviewsBackground" th:attr="data-back-url=${backUrl}">
 <div class="wrapper wrapper--w860">
 <div class="review-wrapper">
     <div class="position-relative mb-3 text-center">
@@ -77,16 +77,16 @@
     <div class="text-center mb-3">
         <img th:if="${dish.imageFileName != null}" th:src="@{${dish.getimagePath()}}" class="img-fluid rounded" style="max-width:300px" alt="Dish image">
     </div>
-    <div class="d-flex align-items-center mb-4">
-        <div class="flex-grow-1 text-center">
+    <div class="position-relative mb-4 text-center">
+        <div class="d-inline-block">
             <div class="star-rating mb-2">
-            <span th:each="i : ${#numbers.sequence(1,5)}">
-                <i th:class="${dish.averageRating >= i ? 'fa fa-star' : 'fa fa-star-o'}"></i>
-            </span>
-            <span class="ms-2" th:text="${#numbers.formatDecimal(dish.averageRating,1,1)}"></span>
+                <span th:each="i : ${#numbers.sequence(1,5)}">
+                    <i th:class="${dish.averageRating >= i ? 'fa fa-star' : 'fa fa-star-o'}"></i>
+                </span>
+                <span class="ms-2" th:text="${#numbers.formatDecimal(dish.averageRating,1,1)}"></span>
             </div>
         </div>
-        <form id="sortForm" method="get" th:if="${reviewPaged.page.content.size() > 0}" class="ms-2">
+        <form id="sortForm" method="get" th:if="${reviewPaged.page.content.size() > 0}" class="position-absolute end-0 top-0">
             <input type="hidden" name="page" value="1"/>
             <input type="hidden" name="size" th:value="${pageSize}"/>
             <input type="hidden" name="sortField" th:value="${sortField}"/>
@@ -94,7 +94,8 @@
             <input type="hidden" name="filterCategory" th:value="${filterCategory}"/>
             <select name="sort" class="form-select sort-select" onchange="document.getElementById('sortForm').submit()">
                 <option value="new" th:selected="${reviewSort == 'new'}">Newest</option>
-                <option value="rating" th:selected="${reviewSort == 'rating'}">Rating high-low</option>
+                <option value="highest" th:selected="${reviewSort == 'highest'}">Highest</option>
+                <option value="lowest" th:selected="${reviewSort == 'lowest'}">Lowest</option>
             </select>
         </form>
     </div>
@@ -148,17 +149,18 @@
 </div>
 </div>
 <script th:inline="javascript">
-    document.getElementById('reviewsBackground').addEventListener('click', function (e) {
+    const reviewsBg = document.getElementById('reviewsBackground');
+    document.addEventListener('click', function (e) {
         const container = document.querySelector('.review-wrapper');
         if (container && !container.contains(e.target)) {
-            const params = new URLSearchParams({
-                pageNo: [[${menuPage}]],
-                pageSize: [[${menuPageSize}]],
-                sortField: '[[${sortField}]]',
-                sortDir: '[[${sortDir}]]',
-                filterCategory: '[[${filterCategory}]]'
-            });
-            window.location.href = '/menu?' + params.toString();
+            const back = reviewsBg.dataset.backUrl;
+            if (back && back !== 'null' && back !== '') {
+                window.location.href = back;
+            } else {
+                const params = new URLSearchParams(window.location.search);
+                params.delete('backUrl');
+                window.location.href = '/menu?' + params.toString();
+            }
         }
     });
 </script>

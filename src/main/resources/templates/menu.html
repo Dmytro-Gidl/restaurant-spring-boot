@@ -26,63 +26,96 @@
         <h4 th:text="#{menu.headline}">Our Menu</h4>
     </div>
 
-    <!--SORT AND FILTER-->
-    <div class="filter-menu d-flex justify-content-end mb-4 flex-column">
-        <div class="filter-menu-desc text-center">
-            <p th:text="#{menu.sort}" class="m-0 fs-4">Sort by and Filter</p>
-        </div>
-        <div class="btn-group mb-3" role="group" aria-label="Button group with nested dropdown">
-            <a th:text="#{menu.sort.name}"
-               th:href="@{'/menu?sortField=name&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}}"
-               class="btn btn-outline-light mt-3 btn-lg">Name</a>
-            <a th:text="#{menu.sort.price}"
-               th:href="@{'/menu?sortField=price&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}}"
-               class="btn btn-outline-light mt-3 btn-lg">Price</a>
-            <a th:text="#{menu.sort.category}"
-               th:href="@{'/menu?sortField=category&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}}"
-               class="btn btn-outline-light mt-3 btn-lg">Category</a>
-
-            <div class="btn-group" role="group">
-                <button th:text="#{menu.filter.category}" id="btnGroupDrop1" type="button"
-                        class="btn btn-outline-light mt-3 btn-lg dropdown-toggle"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                    Choose Category
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
-                    <li>
-                        <a th:text="#{menu.filter.category.all}"
-                           th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=all'}"
-                           class="dropdown-item">Show all</a>
-                    </li>
-                    <li>
-                        <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=drinks'}"
-                           class="dropdown-item">Drinks</a>
-                    </li>
-                    <li>
-                        <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=burgers'}"
-                           class="dropdown-item">Burgers</a>
-                    </li>
-                    <li>
-                        <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=snacks'}"
-                           class="dropdown-item">Snacks</a>
-                    </li>
-                </ul>
+    <div th:if="${recommendedDishes != null and #lists.size(recommendedDishes) > 0}" class="rec-section">
+        <small class="rec-hint">
+            <i class="fa fa-angle-double-down"></i>
+            <span th:text="#{menu.recommended.hint}">Expand</span>
+        </small>
+        <button type="button" class="rec-toggle">
+            <span th:text="#{menu.recommended}">Recommended for you</span>
+            <i class="fa fa-chevron-down"></i>
+        </button>
+        <div class="recommended-carousel collapsed">
+            <h5 class="rec-heading text-center" th:text="#{menu.recommended}">Recommended for you</h5>
+            <button type="button" class="rec-nav rec-prev"><i class="fa fa-chevron-left"></i></button>
+            <button type="button" class="rec-nav rec-next"><i class="fa fa-chevron-right"></i></button>
+            <div class="rec-wrapper">
+                <div th:each="dish : ${recommendedDishes}" class="rec-item">
+                    <div th:replace="fragments/dishCard :: dishCard(dish=${dish}, backUrl=${null})"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!--MENU-->
-    <div th:if="${dishList.page.content.size() > 0}">
-        <form
-              th:action="@{/orders}"
-              th:object="${orderCreationDto}"
-              method="post">
-
-            <div class="menu">
-                <div th:each="dish : ${dishList.page}">
-                    <div th:replace="fragments/dishCard :: dishCard(dish=${dish})"></div>
+    <!-- CATEGORY AND SORT -->
+    <div class="row mb-4">
+        <div class="col-md-3 category-sidebar">
+            <p th:text="#{menu.filter.category}" class="fs-5">Choose Category</p>
+            <div class="list-group">
+                <a th:text="#{menu.filter.category.all}"
+                   th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=all'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'all'} ? ' active' : ''">Show all</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=drinks'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'drinks'} ? ' active' : ''">Drinks</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=burgers'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'burgers'} ? ' active' : ''">Burgers</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=snacks'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'snacks'} ? ' active' : ''">Snacks</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=pizza'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'pizza'} ? ' active' : ''">Pizza</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=rolls'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'rolls'} ? ' active' : ''">Rolls</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=sets'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'sets'} ? ' active' : ''">Sets</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=salads'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'salads'} ? ' active' : ''">Salads</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=soups'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'soups'} ? ' active' : ''">Soups</a>
+                <a th:href="@{'/menu?sortField=' + ${sortField} + '&sortDir=' + ${reverseSortDir} + '&filterCategory=desserts'}"
+                   class="list-group-item list-group-item-action text-white"
+                   th:classappend="${filterCategory == 'desserts'} ? ' active' : ''">Desserts</a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="filter-menu d-flex justify-content-end align-items-center mb-3">
+                <p th:text="#{menu.sort}" class="m-0 fs-5 me-2">Sort by</p>
+                <div class="btn-group" role="group" aria-label="Sort buttons">
+                    <a th:text="#{menu.sort.name}"
+                       th:href="@{'/menu?sortField=name&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}}"
+                       class="btn btn-outline-light"
+                       th:classappend="${sortField == 'name'} ? ' active' : ''">Name</a>
+                    <a th:text="#{menu.sort.price}"
+                       th:href="@{'/menu?sortField=price&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}}"
+                       class="btn btn-outline-light"
+                       th:classappend="${sortField == 'price'} ? ' active' : ''">Price</a>
+                    <a th:text="#{menu.sort.category}"
+                       th:href="@{'/menu?sortField=category&sortDir=' + ${reverseSortDir} + '&filterCategory=' + ${filterCategory}}"
+                       class="btn btn-outline-light"
+                       th:classappend="${sortField == 'category'} ? ' active' : ''">Category</a>
                 </div>
             </div>
+
+            <!--MENU-->
+            <div th:if="${dishList.page.content.size() > 0}">
+                <form
+                        th:action="@{/orders}"
+                        th:object="${orderCreationDto}"
+                        method="post">
+
+                    <div class="menu">
+                        <div th:each="dish : ${dishList.page}" class="menu-item">
+                            <div th:replace="fragments/dishCard :: dishCard(dish=${dish}, backUrl=${null})"></div>
+                        </div>
+                    </div>
 
             <!-- Original sum display (optional) -->
             <span th:text="#{menu.total.sum}"
@@ -118,15 +151,13 @@
                 </li>
             </ul>
         </nav>
+            <div th:unless="${dishList.page.content.size() > 0}" class="text-center mt-4">
+                <p th:text="#{the.category.empty}" class="display-2 text-white">Menu is in development.</p>
+                <p th:text="#{choose.another}" class="display-2 text-white">Choose another one or come back later.</p>
+                <p class="display-2 text-white">:(</p>
+            </div>
+        </div>
     </div>
-</div>
-
-<!-- If no dishes exist -->
-<div th:unless="${dishList.page.totalElements != 0}" class="text-center">
-    <p th:text="#{the.category.empty}" class="display-2 text-white">Menu is in development.</p>
-    <p th:text="#{choose.another}" class="display-2 text-white">Choose another one or come back later.</p>
-    <p class="display-2 text-white">:(</p>
-</div>
 
 <!-- BOTTOM-RIGHT PINNED CART -->
 <div id="bottom-right-cart">
@@ -139,9 +170,9 @@
 </div>
 
 <div id="imageOverlay" class="image-overlay" style="display:none" onclick="hideOverlay()">
-    <button id="overlayPrev" class="overlay-nav" onclick="event.stopPropagation()">&lt;</button>
+    <button id="overlayPrev" class="overlay-nav" type="button" onclick="event.stopPropagation()">&lt;</button>
     <div id="overlayContent" onclick="event.stopPropagation()"></div>
-    <button id="overlayNext" class="overlay-nav" onclick="event.stopPropagation()">&gt;</button>
+    <button id="overlayNext" class="overlay-nav" type="button" onclick="event.stopPropagation()">&gt;</button>
 </div>
 
 <script>
@@ -152,6 +183,7 @@
 
 <script type="text/javascript" th:src="@{/js/button.js}"></script>
 <script type="text/javascript" th:src="@{/js/menu-scroll.js}"></script>
+<script type="text/javascript" th:src="@{/js/recommended-carousel.js}"></script>
 <script type="text/javascript" th:src="@{/js/image-overlay.js}"></script>
 </body>
 </html>
