@@ -69,7 +69,6 @@
 <div class="container my-4">
     <h1 class="mb-4 text-center" th:text="#{order.management.headline}">Order management</h1>
 
-    <div th:if="${orderList.page.content.size() > 0}">
         <div class="d-flex justify-content-between mb-3">
             <div class="dropdown me-2">
                 <a class="btn btn-outline-light dropdown-toggle" href="#" role="button" id="statusDropdown"
@@ -105,6 +104,7 @@
             </div>
         </div>
 
+    <div th:if="${orderList.page.content.size() > 0}">
         <div class="masonry">
             <div th:each="order : ${orderList.page}" class="order-card"
                  th:classappend="${order.status.name() == 'COMPLETED' || order.status.name() == 'DECLINED'} ? '' : 'active-order-card'">

@@ -111,6 +111,16 @@
                     </div>
 
                     <div class="row row-space">
+                        <div class="col-12">
+                            <div class="input-group d-flex flex-column">
+                                <label class="label" th:text="#{dish.ingredients}">Ingredients</label>
+                                <div id="ingredients"></div>
+                                <button type="button" id="add-ingredient" class="btn btn-secondary btn-sm mt-2" th:text="#{dish.add.ingredient}">Add ingredient</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row row-space">
                         <div class="input-group d-flex flex-column">
                             <!-- ROW -->
 
@@ -140,7 +150,30 @@
     </div>
 </div>
 
-<script>
+<script th:inline="javascript">
+    const piecesText = /*[[#{ingredient.unit.pieces}]]*/ 'pcs';
+    const gramsText = /*[[#{ingredient.unit.grams}]]*/ 'g';
+    let ingredientIndex = 0;
+    document.getElementById('add-ingredient').addEventListener('click', function() {
+        const container = document.getElementById('ingredients');
+        const row = document.createElement('div');
+        row.className = 'd-flex mb-2';
+        row.innerHTML = `<input class="form-control me-2" name="ingredients[${ingredientIndex}].name" placeholder="Name" required>`+
+                        `<input class="form-control me-2" type="number" min="1" name="ingredients[${ingredientIndex}].quantity" placeholder="Qty" required>`+
+                        `<select class="form-select me-2" name="ingredients[${ingredientIndex}].unit">`+
+                            `<option value="PIECES">${piecesText}</option>`+
+                            `<option value="GRAMS">${gramsText}</option>`+
+                        `</select>`+
+                        `<button type="button" class="btn btn-danger btn-sm remove-ingredient">X</button>`;
+        container.appendChild(row);
+        ingredientIndex++;
+    });
+    document.getElementById('ingredients').addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-ingredient')) {
+            e.stopPropagation();
+            e.target.parentElement.remove();
+        }
+    });
     document.getElementById('addBackground').addEventListener('click', function(e) {
         const card = document.querySelector('.card');
         if(card && !card.contains(e.target)) {

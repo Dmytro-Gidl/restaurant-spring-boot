@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+
 /**
  * Describes Dish entity
  */
@@ -49,6 +50,10 @@ public class Dish extends AbstractBaseEntity{
     )
     @ToString.Exclude
     private List<Review> reviews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "dish", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private List<DishIngredient> ingredients = new ArrayList<>();
 
     public Dish(long id, String name, String description, Category category, BigDecimal price, String imagePath) {
         this.id = id;

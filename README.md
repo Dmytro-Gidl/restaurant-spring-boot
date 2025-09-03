@@ -9,3 +9,11 @@
 - категорією
   та робити фільтрацію списку страв за категоріями. Клієнт, в рамках одного замовлення, може замовити декілька однакових страв.
   Менеджер керує замовленнями: після отримання нового замовлення, відправляє його на готування. Після приготування Менеджер передає замовлення на доставку. Після  доставки і отримання оплати Менеджер переводить статус замовлення у «виконано».
+
+## Forecasting
+
+See [docs/forecasting.md](docs/forecasting.md) for a detailed explanation of the Holt-based demand forecasting approach used for dishes and ingredients.
+
+## Recommendation
+
+The recommendation engine and its evaluation methodology are described in [docs/recommendation.md](docs/recommendation.md).

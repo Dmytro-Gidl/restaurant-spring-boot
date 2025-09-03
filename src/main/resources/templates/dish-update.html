@@ -114,9 +114,25 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="row row-space">
-                        <div class="input-group d-flex flex-column">
+                        <div class="col-12">
+                            <div class="input-group d-flex flex-column">
+                                <label class="label" th:text="#{dish.ingredients}">Ingredients</label>
+                                <div id="ingredients">
+                                    <div class="d-flex mb-2" th:each="ing,stat : ${dish.ingredients}">
+                                        <input class="form-control me-2" th:name="${'ingredients[' + stat.index + '].name'}" th:value="${ing.name}" required>
+                                        <input class="form-control me-2" type="number" min="1" th:name="${'ingredients[' + stat.index + '].quantity'}" th:value="${ing.quantity}" placeholder="Qty" required>
+                                        <select class="form-select me-2" th:name="${'ingredients[' + stat.index + '].unit'}">
+                                            <option value="PIECES" th:selected="${ing.unit == T(com.exampleepam.restaurant.entity.MeasureUnit).PIECES}" th:text="#{ingredient.unit.pieces}">pcs</option>
+                                            <option value="GRAMS" th:selected="${ing.unit == T(com.exampleepam.restaurant.entity.MeasureUnit).GRAMS}" th:text="#{ingredient.unit.grams}">g</option>
+                                        </select>
+                                        <button type="button" class="btn btn-danger btn-sm remove-ingredient">X</button>
+                                    </div>
+                                </div>
+                                <button type="button" id="add-ingredient" class="btn btn-secondary btn-sm mt-2" th:text="#{dish.add.ingredient}">Add ingredient</button>
+                            </div>
+                        </div>
+                    </div>
                             <label th:text="#{dish.image}" for="image1" class="form-label">Images</label>
                             <div th:with="names=${dish.getAllImageFileNames()}">
                                 <div class="mb-3" th:each="name,stat : ${names}">
@@ -160,7 +176,30 @@
     </div>
 </div>
 
-<script>
+<script th:inline="javascript">
+    const piecesText = /*[[#{ingredient.unit.pieces}]]*/ 'pcs';
+    const gramsText = /*[[#{ingredient.unit.grams}]]*/ 'g';
+    let ingredientIndex = /*[[${dish.ingredients != null ? dish.ingredients.size() : 0}]]*/ 0;
+    document.getElementById('add-ingredient').addEventListener('click', function() {
+        const container = document.getElementById('ingredients');
+        const row = document.createElement('div');
+        row.className = 'd-flex mb-2';
+        row.innerHTML = `<input class="form-control me-2" name="ingredients[${ingredientIndex}].name" placeholder="Name" required>`+
+                        `<input class="form-control me-2" type="number" min="1" name="ingredients[${ingredientIndex}].quantity" placeholder="Qty" required>`+
+                        `<select class="form-select me-2" name="ingredients[${ingredientIndex}].unit">`+
+                        `<option value="PIECES">${piecesText}</option>`+
+                        `<option value="GRAMS">${gramsText}</option>`+
+                        `</select>`+
+                        `<button type="button" class="btn btn-danger btn-sm remove-ingredient">X</button>`;
+        container.appendChild(row);
+        ingredientIndex++;
+    });
+    document.getElementById('ingredients').addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-ingredient')) {
+            e.stopPropagation();
+            e.target.parentElement.remove();
+        }
+    });
     document.getElementById('updateBackground').addEventListener('click', function(e) {
         const card = document.querySelector('.card');
         if(card && !card.contains(e.target)) {

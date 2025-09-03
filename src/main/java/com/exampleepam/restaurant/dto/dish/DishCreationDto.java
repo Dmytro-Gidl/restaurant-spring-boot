@@ -6,6 +6,10 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
+
+import java.util.List;
+
+import com.exampleepam.restaurant.dto.dish.IngredientQuantityDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,5 +40,7 @@ public class DishCreationDto {
   @Digits(integer = 15, fraction = 2, message = "{fail.invalid.price}")
   @Positive(message = "{fail.negative.price}")
   private BigDecimal price;
+
+  private List<IngredientQuantityDto> ingredients;
 }
 
