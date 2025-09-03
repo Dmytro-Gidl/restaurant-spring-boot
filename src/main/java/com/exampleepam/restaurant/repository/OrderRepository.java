@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -29,4 +30,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 //    @Query("SELECT o FROM Order o WHERE o.status = :status AND o.id = :id")
 Page<Order> findOrdersByStatusAndUserId(@Param(value = "status") Status status,
                                             @Param(value = "id") long id, Pageable pageable);
+
+    List<Order> findByStatusAndCreationDateTimeAfter(Status status, LocalDateTime dateTime);
 }
