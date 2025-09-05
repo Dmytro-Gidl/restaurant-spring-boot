@@ -7,6 +7,11 @@ import com.exampleepam.restaurant.entity.Review;
 import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
 import com.exampleepam.restaurant.repository.ReviewRepository;
+import com.exampleepam.restaurant.service.FactorizationService;
+import com.exampleepam.restaurant.repository.OrderRepository;
+import com.exampleepam.restaurant.entity.Order;
+import com.exampleepam.restaurant.entity.OrderItem;
+import com.exampleepam.restaurant.entity.Status;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,14 +31,20 @@ public class RecommendationService {
     private final DishRepository dishRepository;
     private final DishMapper dishMapper;
     private final ReviewRepository reviewRepository;
+    private final OrderRepository orderRepository;
+    private final FactorizationService factorizationService;
 
     @Autowired
     public RecommendationService(DishRepository dishRepository,
                                   DishMapper dishMapper,
-                                  ReviewRepository reviewRepository) {
+                                  ReviewRepository reviewRepository,
+                                  OrderRepository orderRepository,
+                                  FactorizationService factorizationService) {
         this.dishRepository = dishRepository;
         this.dishMapper = dishMapper;
         this.reviewRepository = reviewRepository;
+        this.orderRepository = orderRepository;
+        this.factorizationService = factorizationService;
     }
 
     /**
@@ -48,51 +59,31 @@ public class RecommendationService {
      */
     public List<DishResponseDto> getRecommendedDishes(long userId, int limit) {
         List<Review> reviews = reviewRepository.findAllWithUserAndDish();
-        if (reviews.isEmpty()) {
+        List<Order> orders = orderRepository.findByStatusAndCreationDateTimeAfter(Status.COMPLETED, java.time.LocalDateTime.MIN);
+        if (reviews.isEmpty() && orders.isEmpty()) {
             return List.of();
         }
 
-        // build user -> (dish -> rating) map
-        Map<Long, Map<Long, Integer>> ratingMatrix = new HashMap<>();
-        for (Review r : reviews) {
-            ratingMatrix
-                .computeIfAbsent(r.getUser().getId(), k -> new HashMap<>())
-                .put(r.getDish().getId(), r.getRating());
+        RatingData ratingData = buildRatingMatrix(reviews, orders);
+        Map<Long, Map<Long, Double>> ratingMatrix = ratingData.matrix;
+        Map<Long, Double> userMeans = ratingData.means;
+        Map<Long, Double> targetRatings = ratingMatrix.getOrDefault(userId, Map.of());
+        Map<Long, Double> predictedRatings = predictRatings(userId, ratingMatrix, userMeans);
+        if (!factorizationService.isReady()) {
+            factorizationService.train(reviews, orders);
         }
-
-        Map<Long, Integer> targetRatings = ratingMatrix.getOrDefault(userId, Map.of());
-
-        Map<Long, Double> scoreSums = new HashMap<>();
-        Map<Long, Double> similaritySums = new HashMap<>();
-
-        for (Map.Entry<Long, Map<Long, Integer>> entry : ratingMatrix.entrySet()) {
-            long otherUserId = entry.getKey();
-            if (otherUserId == userId) {
-                continue;
-            }
-            Map<Long, Integer> otherRatings = entry.getValue();
-            double similarity = cosineSimilarity(targetRatings, otherRatings);
-            if (similarity <= 0) {
-                continue;
-            }
-            for (Map.Entry<Long, Integer> dishRating : otherRatings.entrySet()) {
-                long dishId = dishRating.getKey();
-                if (targetRatings.containsKey(dishId)) {
-                    continue; // user already rated this dish
-                }
-                scoreSums.merge(dishId, similarity * dishRating.getValue(), Double::sum);
-                similaritySums.merge(dishId, similarity, Double::sum);
-            }
+        for (Long dishId : ratingMatrix.keySet()) {
+            // no-op, ensures factor vectors for known dishes/users
         }
-
-        if (scoreSums.isEmpty()) {
+        java.util.Set<Long> allDishIds = new java.util.HashSet<>();
+        for (Review r : reviews) allDishIds.add(r.getDish().getId());
+        for (Long dishId : allDishIds) {
+            if (targetRatings.containsKey(dishId)) continue;
+            double pred = factorizationService.predict(userId, dishId);
+            predictedRatings.merge(dishId, pred, (a,b) -> (a+b)/2);
+        }
+        if (predictedRatings.isEmpty()) {
             return fallbackByCategory(userId, targetRatings.keySet(), limit);
-        }
-
-        Map<Long, Double> predictedRatings = new HashMap<>();
-        for (Long dishId : scoreSums.keySet()) {
-            double norm = similaritySums.getOrDefault(dishId, 1.0);
-            predictedRatings.put(dishId, scoreSums.get(dishId) / norm);
         }
 
         Set<Long> dishIds = predictedRatings.keySet();
@@ -116,6 +107,79 @@ public class RecommendationService {
         List<DishResponseDto> fallback = fallbackByCategory(userId, usedIds, limit - dtos.size());
         dtos.addAll(fallback);
         return dtos;
+    }
+
+    /** Build user->dish rating matrix from review list. */
+    private RatingData buildRatingMatrix(List<Review> reviews, List<Order> orders) {
+        Map<Long, Map<Long, Double>> matrix = new HashMap<>();
+        Map<Long, List<Integer>> temp = new HashMap<>();
+        Map<Long, Double> means = new HashMap<>();
+        for (Review r : reviews) {
+            temp.computeIfAbsent(r.getUser().getId(), k -> new ArrayList<>()).add(r.getRating());
+            matrix.computeIfAbsent(r.getUser().getId(), k -> new HashMap<>())
+                .put(r.getDish().getId(), (double) r.getRating());
+        }
+        for (Order o : orders) {
+            long userId = o.getUser().getId();
+            for (OrderItem item : o.getOrderItems()) {
+                long dishId = item.getDish().getId();
+                if (matrix.getOrDefault(userId, Map.of()).containsKey(dishId)) {
+                    continue;
+                }
+                temp.computeIfAbsent(userId, k -> new ArrayList<>()).add(1);
+                matrix.computeIfAbsent(userId, k -> new HashMap<>()).put(dishId, 1.0);
+            }
+        }
+        for (var e : matrix.entrySet()) {
+            long u = e.getKey();
+            double mean = temp.get(u).stream().mapToInt(Integer::intValue).average().orElse(0);
+            means.put(u, mean);
+            Map<Long, Double> userRatings = e.getValue();
+            for (var d : userRatings.entrySet()) {
+                d.setValue(d.getValue() - mean);
+            }
+        }
+        return new RatingData(matrix, means);
+    }
+
+    /**
+     * Predict ratings for dishes the user has not rated using a cosine
+     * similarity weighted average of other users' ratings.
+     */
+    private Map<Long, Double> predictRatings(long userId, Map<Long, Map<Long, Double>> ratingMatrix,
+                                             Map<Long, Double> userMeans) {
+        Map<Long, Double> target = ratingMatrix.getOrDefault(userId, Map.of());
+        double targetMean = userMeans.getOrDefault(userId, 0.0);
+        Map<Long, Double> scoreSums = new HashMap<>();
+        Map<Long, Double> similaritySums = new HashMap<>();
+
+        for (Map.Entry<Long, Map<Long, Double>> entry : ratingMatrix.entrySet()) {
+            long otherUserId = entry.getKey();
+            if (otherUserId == userId) continue;
+            Map<Long, Double> other = entry.getValue();
+            int overlap = 0;
+            for (Long d : target.keySet()) {
+                if (other.containsKey(d)) overlap++;
+            }
+            if (overlap == 0) continue;
+            double sim = cosineSimilarity(target, other);
+            double weight = overlap / (overlap + 5.0);
+            sim *= weight;
+            if (sim <= 0) continue;
+            for (Map.Entry<Long, Double> dr : other.entrySet()) {
+                long dishId = dr.getKey();
+                if (target.containsKey(dishId)) continue;
+                scoreSums.merge(dishId, sim * dr.getValue(), Double::sum);
+                similaritySums.merge(dishId, sim, Double::sum);
+            }
+        }
+
+        Map<Long, Double> preds = new HashMap<>();
+        for (Long dishId : scoreSums.keySet()) {
+            double norm = similaritySums.getOrDefault(dishId, 1.0);
+            preds.put(dishId, targetMean + scoreSums.get(dishId) / norm);
+        }
+        return preds;
     }
 
     private List<DishResponseDto> fallbackByCategory(long userId, Set<Long> excludeIds, int limit) {
@@ -147,7 +211,7 @@ public class RecommendationService {
     /**
      * Compute cosine similarity between two rating vectors.
      */
-    private double cosineSimilarity(Map<Long, Integer> a, Map<Long, Integer> b) {
+    private double cosineSimilarity(Map<Long, Double> a, Map<Long, Double> b) {
         if (a.isEmpty() || b.isEmpty()) {
             return 0.0;
         }
@@ -155,14 +219,14 @@ public class RecommendationService {
         double normA = 0.0;
         double normB = 0.0;
         for (var e : a.entrySet()) {
-            int ra = e.getValue();
+            double ra = e.getValue();
             normA += ra * ra;
-            Integer rb = b.get(e.getKey());
+            Double rb = b.get(e.getKey());
             if (rb != null) {
                 dot += ra * rb;
             }
         }
-        for (int rb : b.values()) {
+        for (double rb : b.values()) {
             normB += rb * rb;
         }
         if (normA == 0 || normB == 0) {
@@ -170,6 +234,8 @@ public class RecommendationService {
         }
         return dot / (Math.sqrt(normA) * Math.sqrt(normB));
     }
+
+    private record RatingData(Map<Long, Map<Long, Double>> matrix, Map<Long, Double> means) {}
 
     private void assignAverageRatings(List<DishResponseDto> dtos) {
         for (DishResponseDto dto : dtos) {
