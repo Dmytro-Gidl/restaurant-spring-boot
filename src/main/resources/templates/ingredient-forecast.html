@@ -41,10 +41,11 @@
         </form>
     </div>
 
-    <details class="text-light mb-3">
+    <details class="text-light mb-1">
         <summary>Methodology</summary>
         <p class="mb-0">Ingredient forecasts aggregate dish predictions produced via Holt-Winters smoothing. Quantities are normalised to each ingredient's base unit.</p>
     </details>
+    <p class="text-light small mb-3">Identical forecast lines often stem from limited completed orders.</p>
 
     <div class="row row-cols-1 row-cols-md-2 g-4" th:if="${forecasts != null && !forecasts.isEmpty()}">
         <div class="col" th:each="f : ${forecasts}">
@@ -53,14 +54,21 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0" th:text="${f.name + ' (' + f.unit.toString().toLowerCase() + ')'}">Ingredient</h5>
                         <select class="form-select form-select-sm bg-dark text-light border-secondary w-auto" th:attr="id=${'scale-' + f.id}" th:title="#{ingredientForecast.scale}">
-                            <option value="hourly" th:text="#{ingredientForecast.hourly}">Hourly</option>
+                            <option value="monthly" th:text="#{ingredientForecast.monthly}" selected>Monthly</option>
                             <option value="daily" th:text="#{ingredientForecast.daily}">Daily</option>
-                            <option value="monthly" th:text="#{ingredientForecast.monthly}">Monthly</option>
+                            <option value="hourly" th:text="#{ingredientForecast.hourly}">Hourly</option>
                         </select>
                     </div>
                     <div class="chart-container" style="height:250px;">
-                        <canvas th:attr="id=${'chart-' + f.id}"></canvas>
+                        <canvas th:if="${!f.noData}" th:attr="id=${'chart-' + f.id}"></canvas>
+                        <div th:if="${f.noData}"
+                             class="d-flex justify-content-center align-items-center h-100 text-muted fs-4">
+                            <span role="img" aria-label="no data" class="me-2">📂</span>
+                            <span>No data</span>
+                        </div>
                     </div>
+                    <p class="text-warning small mt-2" th:if="${f.noData}">No completed orders yet; forecasts start after some history is recorded.</p>
+                    <p class="text-warning small mt-2" th:if="${!f.noData && f.singlePoint}">Only one month has completed orders; all models repeat this value.</p>
                     <details class="text-light mt-2">
                         <summary>Details</summary>
                         <div class="small" th:attr="id=${'details-' + f.id}"></div>
@@ -96,15 +104,29 @@ const forecasts = /*[[${forecasts}]]*/ [];
 const zoomPlugin = window.ChartZoom?.default ?? window.ChartZoom;
 Chart.register(zoomPlugin);
 const charts = {};
-const todayHourIndex = 7 * 24;
-const initialRanges = {
-    hourly: { min: todayHourIndex - 24, max: todayHourIndex + 24 },
-    daily: { min: 30 - 7, max: 30 + 7 },
-    monthly: { min: 24 - 6, max: 24 + 6 }
-};
+function computeRange(scale, labels, actual) {
+    const now = new Date();
+    let pos;
+    if (scale === 'monthly') {
+        const current = now.toISOString().slice(0,7);
+        pos = labels.indexOf(current);
+        if (pos < 0) pos = labels.length - 1;
+        return { min: Math.max(0, pos - 6), max: Math.min(labels.length - 1, pos + 6) };
+    }
+    if (scale === 'daily') {
+        const current = now.toISOString().slice(0,10);
+        pos = labels.indexOf(current);
+        if (pos < 0) pos = labels.length - 1;
+        return { min: Math.max(0, pos - 7), max: Math.min(labels.length - 1, pos + 7) };
+    }
+    const current = now.toISOString().slice(0,13);
+    pos = labels.findIndex(l => l.startsWith(current));
+    if (pos < 0) pos = labels.length - 1;
+    return { min: Math.max(0, pos - 24), max: Math.min(labels.length - 1, pos + 24) };
+}
 
 function updateYScale(chart) {
-    const all = chart.data.datasets.flatMap(d => d.data).filter(v => v != null);
+    const all = chart.data.datasets.flatMap(d => d.data).filter(v => v !== null && v !== undefined);
     chart.options.scales.y.max = all.length ? Math.max(...all) : 1;
 }
 
@@ -116,28 +138,36 @@ function loadDetails(id) {
             if (d && d.length) {
                 const latest = d[d.length - 1];
                 el.innerText = `Latest forecast: ${latest.quantity.toFixed(2)} on ${latest.date}`;
+            } else {
+                el.innerText = 'No details available';
             }
+        })
+        .catch(() => {
+            const el = document.getElementById('details-' + id);
+            if (el) el.innerText = 'Failed to load details';
         });
 }
 
 forecasts.forEach(f => {
+    if (f.noData) return;
     const ctx = document.getElementById('chart-' + f.id).getContext('2d');
-    const maxIndex = f.labels.hourly.length - 1;
+    const maxIndex = f.labels.monthly.length - 1;
+    const monthRange = computeRange('monthly', f.labels.monthly, f.actualData.monthly);
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: f.labels.hourly,
+            labels: f.labels.monthly,
             datasets: [
                 {
                     label: /*[[#{ingredientForecast.actual}]]*/ 'Actual',
-                    data: f.actualData.hourly,
+                    data: f.actualData.monthly,
                     borderColor: 'rgba(75, 192, 192, 1)',
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     spanGaps: true
                 },
                 {
                     label: /*[[#{ingredientForecast.predicted}]]*/ 'Forecast',
-                    data: f.forecastData.hourly,
+                    data: f.forecastData.monthly,
                     borderColor: 'rgba(255, 206, 86, 1)',
                     backgroundColor: 'rgba(255, 206, 86, 0.2)',
                     spanGaps: true
@@ -150,8 +180,8 @@ forecasts.forEach(f => {
             interaction: { mode: 'index', intersect: false },
             scales: {
                 x: {
-                    min: initialRanges.hourly.min,
-                    max: initialRanges.hourly.max,
+                    min: monthRange.min,
+                    max: monthRange.max,
                     ticks: { color: '#fff' },
                     grid: { color: 'rgba(255,255,255,0.1)' }
                 },
@@ -200,10 +230,10 @@ forecasts.forEach(f => {
         info.chart.data.labels = info.data.labels[scale];
         info.chart.data.datasets[0].data = info.data.actualData[scale];
         info.chart.data.datasets[1].data = info.data.forecastData[scale];
-        const range = initialRanges[scale];
+        const range = computeRange(scale, info.data.labels[scale], info.data.actualData[scale]);
         info.maxIndex = info.data.labels[scale].length - 1;
         info.chart.options.scales.x.min = range.min;
-        info.chart.options.scales.x.max = range.max;
+        info.chart.options.scales.x.max = Math.min(range.max, info.maxIndex);
         updateYScale(info.chart);
         info.chart.update();
     });

@@ -3,6 +3,8 @@ package com.exampleepam.restaurant.service;
 import com.exampleepam.restaurant.dto.forecast.DishForecastDto;
 import com.exampleepam.restaurant.dto.forecast.SummaryForecastDto;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -11,11 +13,13 @@ import java.util.*;
  */
 @Service
 public class ForecastSummaryService {
+    private static final Logger log = LoggerFactory.getLogger(ForecastSummaryService.class);
 
     public SummaryForecastDto summarize(List<DishForecastDto> forecasts) {
         if (forecasts == null || forecasts.isEmpty()) {
             return null;
         }
+        log.debug("Summarizing {} dish forecasts", forecasts.size());
         Map<String, List<String>> labels = new HashMap<>();
         Map<String, List<Integer>> totalActual = new HashMap<>();
         Map<String, List<Integer>> totalForecast = new HashMap<>();
@@ -53,6 +57,7 @@ public class ForecastSummaryService {
             totalActual.put(scale, actual);
             totalForecast.put(scale, forecast);
         }
+        log.debug("Summary monthly actuals {}", totalActual.get("monthly"));
         return new SummaryForecastDto(labels, totalActual, totalForecast);
     }
 }

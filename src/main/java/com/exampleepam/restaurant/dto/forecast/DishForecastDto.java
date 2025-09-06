@@ -20,4 +20,6 @@ public class DishForecastDto {
     private Map<String, List<String>> labels;
     private Map<String, List<Integer>> actualData;
     private Map<String, List<Integer>> forecastData;
+    private boolean singlePoint;
+    private boolean noData;
 }

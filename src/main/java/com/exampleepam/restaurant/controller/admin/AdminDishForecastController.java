@@ -68,4 +68,9 @@ public class AdminDishForecastController extends BaseController {
                                                        @RequestParam("dishId") long dishId) {
         return forecastService.getDetails(model, dishId);
     }
+
+    @GetMapping("/about")
+    public String about() {
+        return "dish-forecast-info";
+    }
 }
