@@ -10,13 +10,15 @@ public final class ForecastEvaluator {
 
     public static double mape(List<Double> actual, List<Double> forecast) {
         double sum = 0;
+        int count = 0;
         int n = actual.size();
         for (int i = 0; i < n; i++) {
             double a = actual.get(i);
             if (a == 0) continue;
             sum += Math.abs((a - forecast.get(i)) / a);
+            count++;
         }
-        return 100.0 * sum / n;
+        return count == 0 ? Double.NaN : 100.0 * sum / count;
     }
 
     public static double rmse(List<Double> actual, List<Double> forecast) {
@@ -39,6 +41,10 @@ public final class ForecastEvaluator {
      * averages across folds.
      */
     public static Metrics crossValidate(List<Integer> history, ForecastModel model, int k) {
+        long nonZero = history.stream().filter(v -> v != 0).count();
+        if (nonZero < 2) {
+            return new Metrics(Double.NaN, Double.NaN);
+        }
         int n = history.size();
         if (n < k + 1) {
             return new Metrics(Double.NaN, Double.NaN);

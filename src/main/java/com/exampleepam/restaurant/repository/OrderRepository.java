@@ -32,4 +32,12 @@ Page<Order> findOrdersByStatusAndUserId(@Param(value = "status") Status status,
                                             @Param(value = "id") long id, Pageable pageable);
 
     List<Order> findByStatusAndCreationDateTimeAfter(Status status, LocalDateTime dateTime);
+
+    /**
+     * Fetches all orders with the specified status without imposing a date
+     * constraint. Using this method avoids passing extremely early timestamps
+     * (e.g. {@code LocalDateTime.MIN}) that some JDBC drivers cannot
+     * serialise.
+     */
+    List<Order> findByStatus(Status status);
 }
