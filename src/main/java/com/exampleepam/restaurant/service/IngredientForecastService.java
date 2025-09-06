@@ -105,8 +105,9 @@ public class IngredientForecastService {
                 MeasureUnit unit = di.getIngredient().getUnit();
                 IngredientForecastDto dto = aggMap.computeIfAbsent(
                         di.getIngredient().getId(),
-                        id -> new IngredientForecastDto(id, ingName, unit, df.getLabels(), new HashMap<>(), new HashMap<>()));
+                        id -> new IngredientForecastDto(id, ingName, unit, new HashMap<>(), new HashMap<>(), new HashMap<>()));
                 for (String scale : df.getLabels().keySet()) {
+                    dto.getLabels().putIfAbsent(scale, new ArrayList<>(df.getLabels().get(scale)));
                     List<Integer> aList = df.getActualData().get(scale);
                     List<Integer> fList = df.getForecastData().get(scale);
                     List<Integer> aAgg = dto.getActualData().computeIfAbsent(scale,

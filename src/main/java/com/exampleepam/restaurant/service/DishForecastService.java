@@ -177,57 +177,49 @@ public class DishForecastService {
         List<String> labels = new ArrayList<>();
         List<Integer> actual = new ArrayList<>();
         List<Integer> forecast = new ArrayList<>();
-        List<Integer> historyMonths = new ArrayList<>();
         for (int i = 0; i < 24; i++) {
             YearMonth ym = startMonth.plusMonths(i);
             int val = dishMonthly.getOrDefault(ym, 0);
             labels.add(ym.toString());
             actual.add(val);
             forecast.add(null);
-            historyMonths.add(val);
         }
         int currentVal = dishMonthly.getOrDefault(currentMonth, 0);
         labels.add(currentMonth.toString());
         actual.add(currentVal);
         forecast.add(null);
-        historyMonths.add(currentVal);
 
+        List<Integer> modelHistory = new ArrayList<>(actual);
         int trimmed = 0;
-        while (!historyMonths.isEmpty() && historyMonths.get(0) == 0) {
-            historyMonths.remove(0);
-            labels.remove(0);
-            actual.remove(0);
-            forecast.remove(0);
+        while (!modelHistory.isEmpty() && modelHistory.get(0) == 0) {
+            modelHistory.remove(0);
             trimmed++;
         }
-        if (historyMonths.isEmpty()) {
-            historyMonths.add(currentVal);
-            labels.add(currentMonth.toString());
-            actual.add(currentVal);
-            forecast.add(null);
+        if (modelHistory.isEmpty()) {
+            modelHistory.add(currentVal);
         }
         if (trimmed > 0) {
             log.debug("Dish {} trimmed {} leading zero months", id, trimmed);
         }
-        log.debug("Dish {} history after trim: {}", id, historyMonths);
+        log.debug("Dish {} history after trim: {}", id, modelHistory);
 
-        boolean singlePoint = historyMonths.size() == 1;
+        boolean singlePoint = modelHistory.size() == 1;
         ForecastResult result;
         if (singlePoint) {
-            double v = historyMonths.get(0);
+            double v = modelHistory.get(0);
             List<Double> preds = new ArrayList<>(Collections.nCopies(24, v));
             result = new ForecastResult(preds, Double.NaN, Double.NaN, Double.NaN,
                     Double.NaN, Double.NaN, List.of(), List.of());
             log.warn("Dish {} forecast based on single data point; repeating value {}", id, v);
         } else {
             ForecastModel model = models.getOrDefault(modelName, models.values().iterator().next());
-            result = model.forecast(historyMonths, 24);
+            result = model.forecast(modelHistory, 24);
             log.info("Dish {} forecast alpha={} beta={} gamma={} MAPE={} RMSE={}",
                     id, result.getAlpha(), result.getBeta(), result.getGamma(),
                     result.getMape(), result.getRmse());
         }
         latestResults.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, result);
-        latestHistory.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, new ArrayList<>(historyMonths));
+        latestHistory.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, new ArrayList<>(modelHistory));
         singlePointFlags.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, singlePoint);
         forecastRepository.deleteByGeneratedAtBefore(LocalDate.now());
         Map<YearMonth, Integer> monthForecastMap = new HashMap<>();
@@ -247,7 +239,7 @@ public class DishForecastService {
             forecast.add(pred);
         }
 
-        return new MonthlyResult(new ScaleData(labels, actual, forecast), monthForecastMap);
+        return new MonthlyResult(new ScaleData(labels, actual, forecast), monthForecastMap, modelHistory);
     }
 
     private ScaleData forecastDaily(long id, History history, LocalDate today,
@@ -394,7 +386,7 @@ public class DishForecastService {
 
     private record ScaleData(List<String> labels, List<Integer> actual, List<Integer> forecast) {}
 
-    private record MonthlyResult(ScaleData scale, Map<YearMonth, Integer> monthForecasts) {}
+    private record MonthlyResult(ScaleData scale, Map<YearMonth, Integer> monthForecasts, List<Integer> modelHistory) {}
 
 
     /** Simple container for aggregated history. */
