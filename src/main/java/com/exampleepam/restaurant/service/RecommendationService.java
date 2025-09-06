@@ -73,8 +73,12 @@ public class RecommendationService {
     public List<DishResponseDto> getRecommendedDishes(long userId, int limit) {
         log.debug("Generating recommendations for user {} limit {}", userId, limit);
         List<Review> reviews = reviewRepository.findAllWithUserAndDish();
-        List<Order> orders = orderRepository.findByStatusAndCreationDateTimeAfter(Status.COMPLETED, java.time.LocalDateTime.MIN);
-        log.debug("Loaded {} reviews and {} orders for recommendation", reviews.size(), orders.size());
+        // Fetch completed orders without using LocalDateTime.MIN which can cause
+        // serialisation issues with some JDBC drivers. All completed orders are
+        // included, as the recommendation algorithms handle their own recency
+        // weighting.
+        List<Order> orders = orderRepository.findByStatus(Status.COMPLETED);
+        log.debug("Loaded {} reviews and {} completed orders for recommendation", reviews.size(), orders.size());
         if (reviews.isEmpty() && orders.isEmpty()) {
             log.debug("No data available for recommendations");
             return List.of();
@@ -101,8 +105,10 @@ public class RecommendationService {
         }
         log.debug("Predicted ratings for {} dishes", predictedRatings.size());
         if (predictedRatings.isEmpty()) {
-            log.debug("Prediction set empty – falling back to category preferences");
+            log.debug("Using category-based fallback only");
             return categoryFallback.recommend(userId, targetRatings.keySet(), limit);
+        } else {
+            log.debug("Using collaborative and factorization predictions");
         }
 
         Set<Long> dishIds = predictedRatings.keySet();
@@ -112,23 +118,24 @@ public class RecommendationService {
         assignReviewCounts(dtos);
 
         dtos.sort(Comparator.comparingDouble(d -> -predictedRatings.getOrDefault(d.getId(), 0.0)));
+        List<DishResponseDto> result;
         if (dtos.size() >= limit) {
-            List<DishResponseDto> result = dtos.subList(0, limit);
-            log.debug("Returning {} recommendations", result.size());
-            return result;
+            result = new ArrayList<>(dtos.subList(0, limit));
+        } else {
+            // If collaborative filtering produced fewer dishes than needed, fill up
+            // the remainder using the user's preferred categories.
+            Set<Long> usedIds = new java.util.HashSet<>();
+            for (DishResponseDto dto : dtos) {
+                usedIds.add(dto.getId());
+            }
+            usedIds.addAll(targetRatings.keySet());
+            List<DishResponseDto> fallback = categoryFallback.recommend(userId, usedIds, limit - dtos.size());
+            log.debug("Added {} dishes from category fallback", fallback.size());
+            dtos.addAll(fallback);
+            result = dtos;
         }
-
-        // If collaborative filtering produced fewer dishes than needed, fill up
-        // the remainder using the user's preferred categories.
-        Set<Long> usedIds = new java.util.HashSet<>();
-        for (DishResponseDto dto : dtos) {
-            usedIds.add(dto.getId());
-        }
-        usedIds.addAll(targetRatings.keySet());
-        List<DishResponseDto> fallback = categoryFallback.recommend(userId, usedIds, limit - dtos.size());
-        dtos.addAll(fallback);
-        log.debug("Returning {} recommendations after fallback", dtos.size());
-        return dtos;
+        log.debug("Returning {} recommendations", result.size());
+        return result;
     }
 
     private void assignAverageRatings(List<DishResponseDto> dtos) {

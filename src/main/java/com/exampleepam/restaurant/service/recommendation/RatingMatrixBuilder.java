@@ -4,18 +4,24 @@ import com.exampleepam.restaurant.entity.Order;
 import com.exampleepam.restaurant.entity.OrderItem;
 import com.exampleepam.restaurant.entity.Review;
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class RatingMatrixBuilder {
 
     public RatingData build(List<Review> reviews, List<Order> orders) {
+        log.debug("Building rating matrix from {} reviews and {} orders", reviews.size(), orders.size());
         Map<Long, Map<Long, Double>> matrix = new HashMap<>();
         Map<Long, List<Integer>> temp = new HashMap<>();
         Map<Long, Double> means = new HashMap<>();
+        Set<Long> reviewUsers = new HashSet<>();
         for (Review r : reviews) {
-            temp.computeIfAbsent(r.getUser().getId(), k -> new ArrayList<>()).add(r.getRating());
-            matrix.computeIfAbsent(r.getUser().getId(), k -> new HashMap<>())
+            long u = r.getUser().getId();
+            reviewUsers.add(u);
+            temp.computeIfAbsent(u, k -> new ArrayList<>()).add(r.getRating());
+            matrix.computeIfAbsent(u, k -> new HashMap<>())
                 .put(r.getDish().getId(), (double) r.getRating());
         }
         for (Order o : orders) {
@@ -29,6 +35,14 @@ public class RatingMatrixBuilder {
                 matrix.computeIfAbsent(userId, k -> new HashMap<>()).put(dishId, 1.0);
             }
         }
+        Set<Long> orderUsers = new HashSet<>();
+        for (Order o : orders) {
+            orderUsers.add(o.getUser().getId());
+        }
+        orderUsers.removeAll(reviewUsers);
+        if (!orderUsers.isEmpty()) {
+            log.debug("Users with orders but no reviews: {}", orderUsers);
+        }
         for (var e : matrix.entrySet()) {
             long u = e.getKey();
             double mean = temp.get(u).stream().mapToInt(Integer::intValue).average().orElse(0);
@@ -38,6 +52,8 @@ public class RatingMatrixBuilder {
                 d.setValue(d.getValue() - mean);
             }
         }
+        int dishCount = (int) matrix.values().stream().flatMap(m -> m.keySet().stream()).distinct().count();
+        log.debug("Rating matrix built for {} users and {} dishes", matrix.size(), dishCount);
         return new RatingData(matrix, means);
     }
 

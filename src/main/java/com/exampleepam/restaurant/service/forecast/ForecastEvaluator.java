@@ -23,12 +23,16 @@ public final class ForecastEvaluator {
 
     public static double rmse(List<Double> actual, List<Double> forecast) {
         double sum = 0;
+        int count = 0;
         int n = actual.size();
         for (int i = 0; i < n; i++) {
-            double diff = actual.get(i) - forecast.get(i);
+            double a = actual.get(i);
+            if (a == 0) continue;
+            double diff = a - forecast.get(i);
             sum += diff * diff;
+            count++;
         }
-        return Math.sqrt(sum / n);
+        return count == 0 ? Double.NaN : Math.sqrt(sum / count);
     }
 
     /** Metrics container for cross-validation results. */
@@ -41,21 +45,21 @@ public final class ForecastEvaluator {
      * averages across folds.
      */
     public static Metrics crossValidate(List<Integer> history, ForecastModel model, int k) {
-        long nonZero = history.stream().filter(v -> v != 0).count();
-        if (nonZero < 2) {
-            return new Metrics(Double.NaN, Double.NaN);
-        }
-        int n = history.size();
-        if (n < k + 1) {
+        List<Integer> filtered = history.stream().filter(v -> v != 0).toList();
+        int n = filtered.size();
+        if (n < 2 || n < k + 1) {
             return new Metrics(Double.NaN, Double.NaN);
         }
         int foldSize = n / k;
+        if (foldSize == 0) {
+            return new Metrics(Double.NaN, Double.NaN);
+        }
         double mapeSum = 0;
         double rmseSum = 0;
         int folds = 0;
         for (int i = foldSize; i <= n - foldSize; i += foldSize) {
-            List<Integer> train = history.subList(0, i);
-            List<Integer> test = history.subList(i, Math.min(i + foldSize, n));
+            List<Integer> train = filtered.subList(0, i);
+            List<Integer> test = filtered.subList(i, Math.min(i + foldSize, n));
             ForecastResult fr = model.forecast(train, test.size());
             List<Double> actual = new java.util.ArrayList<>();
             for (Integer t : test) actual.add(t.doubleValue());
@@ -64,7 +68,7 @@ public final class ForecastEvaluator {
             rmseSum += rmse(actual, preds);
             folds++;
         }
-        return new Metrics(mapeSum / folds, rmseSum / folds);
+        return folds == 0 ? new Metrics(Double.NaN, Double.NaN) : new Metrics(mapeSum / folds, rmseSum / folds);
     }
 }
 

@@ -7,10 +7,12 @@ import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
 import com.exampleepam.restaurant.repository.ReviewRepository;
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class CategoryFallback {
 
@@ -28,6 +30,7 @@ public class CategoryFallback {
     }
 
     public List<DishResponseDto> recommend(long userId, Set<Long> excludeIds, int limit) {
+        log.debug("Category fallback engaged for user {} limit {}", userId, limit);
         Set<Long> excluded = new HashSet<>(excludeIds);
         List<DishResponseDto> result = new ArrayList<>();
         List<Object[]> preferredCats = reviewRepository.findPreferredCategories(userId);
@@ -42,9 +45,13 @@ public class CategoryFallback {
                 if (excluded.contains(dto.getId())) continue;
                 result.add(dto);
                 excluded.add(dto.getId());
-                if (result.size() >= limit) return result;
+                if (result.size() >= limit) {
+                    log.debug("Fallback returning {} dishes", result.size());
+                    return result;
+                }
             }
         }
+        log.debug("Fallback produced {} dishes", result.size());
         return result;
     }
 
