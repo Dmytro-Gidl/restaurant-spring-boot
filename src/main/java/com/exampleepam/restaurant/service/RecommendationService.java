@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 /**
  * Service providing dish recommendations for users.
  */
+@Slf4j
 @Service
 public class RecommendationService {
 
@@ -58,9 +60,12 @@ public class RecommendationService {
      * @return list of recommended dishes, possibly empty
      */
     public List<DishResponseDto> getRecommendedDishes(long userId, int limit) {
+        log.debug("Generating recommendations for user {} limit {}", userId, limit);
         List<Review> reviews = reviewRepository.findAllWithUserAndDish();
         List<Order> orders = orderRepository.findByStatusAndCreationDateTimeAfter(Status.COMPLETED, java.time.LocalDateTime.MIN);
+        log.debug("Loaded {} reviews and {} orders for recommendation", reviews.size(), orders.size());
         if (reviews.isEmpty() && orders.isEmpty()) {
+            log.debug("No data available for recommendations");
             return List.of();
         }
 
@@ -71,6 +76,7 @@ public class RecommendationService {
         Map<Long, Double> predictedRatings = predictRatings(userId, ratingMatrix, userMeans);
         if (!factorizationService.isReady()) {
             factorizationService.train(reviews, orders);
+            log.debug("Trained factorization model");
         }
         for (Long dishId : ratingMatrix.keySet()) {
             // no-op, ensures factor vectors for known dishes/users
@@ -82,7 +88,9 @@ public class RecommendationService {
             double pred = factorizationService.predict(userId, dishId);
             predictedRatings.merge(dishId, pred, (a,b) -> (a+b)/2);
         }
+        log.debug("Predicted ratings for {} dishes", predictedRatings.size());
         if (predictedRatings.isEmpty()) {
+            log.debug("Prediction set empty – falling back to category preferences");
             return fallbackByCategory(userId, targetRatings.keySet(), limit);
         }
 
@@ -94,7 +102,9 @@ public class RecommendationService {
 
         dtos.sort(Comparator.comparingDouble(d -> -predictedRatings.getOrDefault(d.getId(), 0.0)));
         if (dtos.size() >= limit) {
-            return dtos.subList(0, limit);
+            List<DishResponseDto> result = dtos.subList(0, limit);
+            log.debug("Returning {} recommendations", result.size());
+            return result;
         }
 
         // If collaborative filtering produced fewer dishes than needed, fill up
@@ -106,6 +116,7 @@ public class RecommendationService {
         usedIds.addAll(targetRatings.keySet());
         List<DishResponseDto> fallback = fallbackByCategory(userId, usedIds, limit - dtos.size());
         dtos.addAll(fallback);
+        log.debug("Returning {} recommendations after fallback", dtos.size());
         return dtos;
     }
 

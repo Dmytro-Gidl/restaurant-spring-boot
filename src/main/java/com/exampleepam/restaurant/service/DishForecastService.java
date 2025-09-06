@@ -191,6 +191,25 @@ public class DishForecastService {
         forecast.add(null);
         historyMonths.add(currentVal);
 
+        int trimmed = 0;
+        while (!historyMonths.isEmpty() && historyMonths.get(0) == 0) {
+            historyMonths.remove(0);
+            labels.remove(0);
+            actual.remove(0);
+            forecast.remove(0);
+            trimmed++;
+        }
+        if (historyMonths.isEmpty()) {
+            historyMonths.add(currentVal);
+            labels.add(currentMonth.toString());
+            actual.add(currentVal);
+            forecast.add(null);
+        }
+        if (trimmed > 0) {
+            log.debug("Dish {} trimmed {} leading zero months", id, trimmed);
+        }
+        log.debug("Dish {} history after trim: {}", id, historyMonths);
+
         ForecastModel model = models.getOrDefault(modelName, models.values().iterator().next());
         ForecastResult result = model.forecast(historyMonths, 24);
         latestResults.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, result);

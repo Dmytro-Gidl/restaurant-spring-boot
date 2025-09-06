@@ -2,7 +2,7 @@
 
 We rely on a small, transparent pipeline to look a few weeks ahead at dish demand and ingredient usage.
 
-1. **Monthly baseline.** Up to two years of orders are grouped by month. Two competing models are available: Holt‑Winters triple exponential smoothing and a lightweight ARIMA(1,0,0). Both are tuned on a hold‑out slice and their MAPE and RMSE scores are logged for comparison.
+1. **Monthly baseline.** Up to two years of orders are grouped by month. Two competing models are available: Holt‑Winters triple exponential smoothing and a lightweight ARIMA(1,0,0). Both are tuned on a hold‑out slice and their MAPE and RMSE scores are logged for comparison. Leading months containing only zeros are removed before modelling so that long dormant periods do not skew the series.
 2. **Daily breakdown with reconciliation.** Monthly forecasts are converted into daily values. For future days, the remainder of each month is distributed evenly and then reconciled so that the daily sum equals the monthly prediction exactly.
 3. **Hourly breakdown with reconciliation.** Recent hourly order patterns provide weights that disaggregate each day into 24 buckets. A reconciliation step adjusts the final hour to ensure each day's hourly total equals its daily forecast.
 
