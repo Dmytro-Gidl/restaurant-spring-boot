@@ -57,9 +57,9 @@ public class MonthlyForecaster {
         boolean singlePoint = modelHistory.size() == 1;
         ForecastResult result = model.forecast(modelHistory, 12);
         Map<YearMonth, Integer> monthForecastMap = new HashMap<>();
-        for (int i = 0; i < result.forecast().size(); i++) {
+        for (int i = 0; i < result.getForecasts().size(); i++) {
             YearMonth ym = currentMonth.plusMonths(i + 1);
-            int pred = result.forecast().get(i);
+            int pred = (int) Math.round(result.getForecasts().get(i));
             monthForecastMap.put(ym, pred);
             DishForecast df = new DishForecast();
             df.setDish(dish);
