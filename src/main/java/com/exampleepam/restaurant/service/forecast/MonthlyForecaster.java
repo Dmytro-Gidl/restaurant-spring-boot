@@ -5,6 +5,8 @@ import com.exampleepam.restaurant.entity.DishForecast;
 import com.exampleepam.restaurant.repository.DishForecastRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.Map;
 public class MonthlyForecaster {
 
     private final DishForecastRepository forecastRepository;
+    private static final Logger log = LoggerFactory.getLogger(MonthlyForecaster.class);
 
     @Autowired
     public MonthlyForecaster(DishForecastRepository forecastRepository) {
@@ -51,11 +54,14 @@ public class MonthlyForecaster {
             modelHistory.remove(0);
             trimmed++;
         }
+        log.debug("Dish {} trimmed {} leading zero months", id, trimmed);
         if (modelHistory.isEmpty()) {
             modelHistory.add(currentVal);
         }
+        log.debug("Dish {} model history {}", id, modelHistory);
         boolean singlePoint = modelHistory.size() == 1;
         ForecastResult result = model.forecast(modelHistory, 12);
+        log.debug("Dish {} predictions {}", id, result.getForecasts());
         Map<YearMonth, Integer> monthForecastMap = new HashMap<>();
         for (int i = 0; i < result.getForecasts().size(); i++) {
             YearMonth ym = currentMonth.plusMonths(i + 1);

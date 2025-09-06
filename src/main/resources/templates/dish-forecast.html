@@ -66,7 +66,7 @@
 
     <details class="text-light mb-3">
         <summary>Methodology</summary>
-        <p class="mb-0">Leading zero-demand months are trimmed and single remaining points trigger a naive repeat forecast. Models are evaluated via k-fold cross-validation and full details are documented in <a href="/docs/forecasting.md" class="text-decoration-underline text-light">docs/forecasting.md</a>.</p>
+        <p class="mb-0">Leading zero-demand months are trimmed and single remaining points trigger a naive repeat forecast. Models are evaluated via k-fold cross-validation and full details are documented in <a href="/docs/forecasting.md" class="text-decoration-underline text-light">docs/forecasting.md</a>. For a plain-language overview, see the <a href="/admin/dish-forecast/about" class="text-decoration-underline text-light">forecasting help page</a>.</p>
     </details>
 
     <div class="row justify-content-center mb-4" th:if="${summary != null}">
@@ -163,8 +163,11 @@ function loadDetails(id) {
                 const r = d.result;
                 const ci = r.lower.length ? `[${r.lower[0].toFixed(2)}, ${r.upper[0].toFixed(2)}]` : 'n/a';
                 let text = `α=${r.alpha.toFixed(2)}, β=${r.beta.toFixed(2)}, γ=${r.gamma.toFixed(2)}, MAPE=${r.mape.toFixed(2)}, RMSE=${r.rmse.toFixed(2)}, CI=${ci}`;
+                const nonZero = d.history ? d.history.filter(v => v > 0).length : 0;
                 if (d.singlePoint) {
                     text += ' — based on a single month; add more completed orders for better forecasts';
+                } else if (nonZero < 3) {
+                    text += ' — limited history; forecasts may be flat across models';
                 }
                 el.innerText = text;
             }

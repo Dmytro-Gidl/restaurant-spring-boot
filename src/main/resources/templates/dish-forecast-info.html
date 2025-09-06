@@ -8,13 +8,13 @@
 <body class="bg-dark text-light">
 <div class="container my-4">
     <h2>Forecasting models</h2>
-    <p>This page explains the forecasting options for dishes.</p>
+    <p>This page explains the dish forecast options in everyday language.</p>
     <ul>
-        <li><strong>Holt&#8209;Winters</strong>: triple exponential smoothing capturing level, trend and seasonality. Works well for steady demand with gradual changes.</li>
-        <li><strong>ARIMA(1,0,0)</strong>: a simple autoregressive model using the previous value to project the next. Suitable for short histories without seasonality.</li>
-        <li><strong>Auto&#8209;ARIMA</strong>: searches a range of ARIMA parameters and selects the best according to AIC.</li>
+        <li><strong>Holt‑Winters</strong>: follows the recent trend and smooths out bumps. It is the default choice and works well when demand changes gradually.</li>
+        <li><strong>ARIMA&nbsp;(1,0,0)</strong>: looks mostly at the last month to guess the next. Use it when numbers swing up and down around an average.</li>
+        <li><strong>Auto‑ARIMA</strong>: tries a couple of simple patterns and picks the one that fits recent data best.</li>
     </ul>
-    <p>When only a single non‑zero month is available, the system repeats that value for all future months.</p>
+    <p>If only a few scattered months of orders exist, all models may show the same flat line. More completed orders are needed to see real differences.</p>
     <a href="/admin/dish-forecast" class="btn btn-outline-light mt-3">Back to forecasts</a>
 </div>
 </body>

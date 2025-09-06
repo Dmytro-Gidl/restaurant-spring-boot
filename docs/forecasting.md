@@ -2,6 +2,8 @@
 
 We rely on a small, transparent pipeline to look a few weeks ahead at dish demand and ingredient usage.
 
+For a plain-language overview of the forecasting options, visit the in-app <a href="/admin/dish-forecast/about">help page</a>. It explains how Holt‑Winters smooths gradual changes, ARIMA uses the last month to guess the next, and auto‑ARIMA automatically picks the simpler of the two based on recent data.
+
 1. **Monthly baseline.** Up to two years of orders are grouped by month. Leading months that contain only zeros are trimmed so dormant periods do not dominate model fitting. If a single non‑zero month remains after trimming, the system issues a naive forecast by repeating that value and flags the result in the details panel. Three models can then be applied:
    - **Holt‑Winters:** triple exponential smoothing capturing level and trend. Works well for gradually changing demand and is the current default.
    - **ARIMA(1,0,0):** a simple autoregressive model assuming stationarity. Useful when demand fluctuates around a mean.

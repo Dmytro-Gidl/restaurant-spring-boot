@@ -17,6 +17,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,6 +33,7 @@ public class IngredientForecastService {
     private final DishRepository dishRepository;
     private final IngredientRepository ingredientRepository;
     private final IngredientForecastRepository forecastRepository;
+    private static final Logger log = LoggerFactory.getLogger(IngredientForecastService.class);
 
     @Autowired
     public IngredientForecastService(DishForecastService dishForecastService,
@@ -112,6 +115,7 @@ public class IngredientForecastService {
                 }
             }
         }
+        aggMap.values().forEach(dto -> log.debug("Ingredient {} monthly totals {}", dto.getName(), dto.getActualData().get("monthly")));
         return aggMap;
     }
 

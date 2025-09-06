@@ -6,6 +6,8 @@ import com.exampleepam.restaurant.entity.Status;
 import com.exampleepam.restaurant.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,6 +21,7 @@ import java.util.ArrayList;
 public class HistoryCollector {
 
     private final OrderRepository orderRepository;
+    private static final Logger log = LoggerFactory.getLogger(HistoryCollector.class);
 
     @Autowired
     public HistoryCollector(OrderRepository orderRepository) {
@@ -27,6 +30,7 @@ public class HistoryCollector {
 
     public History collect(LocalDateTime start) {
         List<Order> orders = orderRepository.findByStatusAndCreationDateTimeAfter(Status.COMPLETED, start);
+        log.debug("Fetched {} completed orders since {}", orders.size(), start);
         History history = new History();
         for (Order order : orders) {
             LocalDateTime dateTime = order.getCreationDateTime();
@@ -45,6 +49,7 @@ public class HistoryCollector {
                 history.globalMonthly.merge(ym, qty, Integer::sum);
             }
         }
+        history.monthlyTotals.forEach((id, map) -> log.debug("Dish {} monthly totals {}", id, map));
         return history;
     }
 
