@@ -47,6 +47,7 @@ public class DishForecastService {
     private final Map<String, Map<Long, ForecastResult>> latestResults = new HashMap<>();
     private final Map<String, Map<Long, List<Integer>>> latestHistory = new HashMap<>();
     private final Map<String, ForecastEvaluator.Metrics> modelMetrics = new HashMap<>();
+    private final Map<String, Map<Long, Boolean>> singlePointFlags = new HashMap<>();
 
     @Autowired
     public DishForecastService(OrderRepository orderRepository,
@@ -210,13 +211,24 @@ public class DishForecastService {
         }
         log.debug("Dish {} history after trim: {}", id, historyMonths);
 
-        ForecastModel model = models.getOrDefault(modelName, models.values().iterator().next());
-        ForecastResult result = model.forecast(historyMonths, 24);
+        boolean singlePoint = historyMonths.size() == 1;
+        ForecastResult result;
+        if (singlePoint) {
+            double v = historyMonths.get(0);
+            List<Double> preds = new ArrayList<>(Collections.nCopies(24, v));
+            result = new ForecastResult(preds, Double.NaN, Double.NaN, Double.NaN,
+                    Double.NaN, Double.NaN, List.of(), List.of());
+            log.warn("Dish {} forecast based on single data point; repeating value {}", id, v);
+        } else {
+            ForecastModel model = models.getOrDefault(modelName, models.values().iterator().next());
+            result = model.forecast(historyMonths, 24);
+            log.info("Dish {} forecast alpha={} beta={} gamma={} MAPE={} RMSE={}",
+                    id, result.getAlpha(), result.getBeta(), result.getGamma(),
+                    result.getMape(), result.getRmse());
+        }
         latestResults.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, result);
         latestHistory.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, new ArrayList<>(historyMonths));
-        log.info("Dish {} forecast alpha={} beta={} gamma={} MAPE={} RMSE={}",
-                id, result.getAlpha(), result.getBeta(), result.getGamma(),
-                result.getMape(), result.getRmse());
+        singlePointFlags.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, singlePoint);
         forecastRepository.deleteByGeneratedAtBefore(LocalDate.now());
         Map<YearMonth, Integer> monthForecastMap = new HashMap<>();
         List<Double> preds = result.getForecasts();
@@ -429,11 +441,12 @@ public class DishForecastService {
     public ForecastDetails getDetails(String modelName, long dishId) {
         Map<Long, List<Integer>> h = latestHistory.getOrDefault(modelName, Map.of());
         Map<Long, ForecastResult> r = latestResults.getOrDefault(modelName, Map.of());
+        Map<Long, Boolean> sp = singlePointFlags.getOrDefault(modelName, Map.of());
         return new ForecastDetails(h.getOrDefault(dishId, List.of()),
-                r.get(dishId));
+                r.get(dishId), sp.getOrDefault(dishId, false));
     }
 
-    public record ForecastDetails(List<Integer> history, ForecastResult result) {}
+    public record ForecastDetails(List<Integer> history, ForecastResult result, boolean singlePoint) {}
 
     public Map<String, ForecastEvaluator.Metrics> getModelMetrics() {
         return modelMetrics;
