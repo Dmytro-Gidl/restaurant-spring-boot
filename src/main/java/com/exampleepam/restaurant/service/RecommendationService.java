@@ -73,8 +73,12 @@ public class RecommendationService {
     public List<DishResponseDto> getRecommendedDishes(long userId, int limit) {
         log.debug("Generating recommendations for user {} limit {}", userId, limit);
         List<Review> reviews = reviewRepository.findAllWithUserAndDish();
-        List<Order> orders = orderRepository.findByStatusAndCreationDateTimeAfter(Status.COMPLETED, java.time.LocalDateTime.MIN);
-        log.debug("Loaded {} reviews and {} orders for recommendation", reviews.size(), orders.size());
+        // Fetch completed orders without using LocalDateTime.MIN which can cause
+        // serialisation issues with some JDBC drivers. All completed orders are
+        // included, as the recommendation algorithms handle their own recency
+        // weighting.
+        List<Order> orders = orderRepository.findByStatus(Status.COMPLETED);
+        log.debug("Loaded {} reviews and {} completed orders for recommendation", reviews.size(), orders.size());
         if (reviews.isEmpty() && orders.isEmpty()) {
             log.debug("No data available for recommendations");
             return List.of();
