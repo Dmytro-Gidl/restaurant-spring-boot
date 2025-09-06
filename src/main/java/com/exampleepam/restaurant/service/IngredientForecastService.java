@@ -53,29 +53,10 @@ public class IngredientForecastService {
                                                              String modelName, Pageable pageable) {
         Map<Long, Dish> dishMap = dishRepository.findAll().stream()
                 .collect(Collectors.toMap(Dish::getId, d -> d));
-        Page<DishForecastDto> dishForecasts = dishForecastService.getDishForecasts(historyDays, null, type, modelName, Pageable.unpaged());
-        Map<Long, IngredientForecastDto> aggMap = aggregateForecasts(dishForecasts, dishMap, filter);
-
-        forecastRepository.deleteByGeneratedAtBefore(java.time.LocalDate.now());
+        Page<DishForecastDto> dishForecasts = fetchDishForecasts(historyDays, type, modelName);
+        Map<Long, IngredientForecastDto> aggMap = aggregateIngredientData(dishForecasts, dishMap, filter);
+        persistForecasts(aggMap.values());
         List<IngredientForecastDto> list = new ArrayList<>(aggMap.values());
-        for (IngredientForecastDto dto : list) {
-            Ingredient ingredient = ingredientRepository.findById(dto.getId()).orElse(null);
-            if (ingredient == null) continue;
-            List<Integer> monthly = dto.getForecastData().get("monthly");
-            List<String> labels = dto.getLabels().get("monthly");
-            if (monthly != null && labels != null) {
-                for (int i = 0; i < monthly.size(); i++) {
-                    Integer val = monthly.get(i);
-                    if (val == null) continue;
-                    IngredientForecast entity = new IngredientForecast();
-                    entity.setIngredient(ingredient);
-                    entity.setDate(java.time.YearMonth.parse(labels.get(i)).atDay(1));
-                    entity.setQuantity(val);
-                    entity.setGeneratedAt(java.time.LocalDate.now());
-                    forecastRepository.save(entity);
-                }
-            }
-        }
         list.sort(Comparator.comparing(IngredientForecastDto::getName));
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), list.size());
@@ -83,13 +64,17 @@ public class IngredientForecastService {
         return new PageImpl<>(content, pageable, list.size());
     }
 
+    private Page<DishForecastDto> fetchDishForecasts(int historyDays, Category type, String modelName) {
+        return dishForecastService.getDishForecasts(historyDays, null, type, modelName, Pageable.unpaged());
+    }
+
     /**
      * Combine dish forecasts into ingredient-level projections and apply an
      * optional ingredient name filter.
      */
-    private Map<Long, IngredientForecastDto> aggregateForecasts(Page<DishForecastDto> dishForecasts,
-                                                                Map<Long, Dish> dishMap,
-                                                                String filter) {
+    private Map<Long, IngredientForecastDto> aggregateIngredientData(Page<DishForecastDto> dishForecasts,
+                                                                     Map<Long, Dish> dishMap,
+                                                                     String filter) {
         Map<Long, IngredientForecastDto> aggMap = new LinkedHashMap<>();
         String f = filter == null ? null : filter.toLowerCase();
         for (DishForecastDto df : dishForecasts.getContent()) {
@@ -105,8 +90,9 @@ public class IngredientForecastService {
                 MeasureUnit unit = di.getIngredient().getUnit();
                 IngredientForecastDto dto = aggMap.computeIfAbsent(
                         di.getIngredient().getId(),
-                        id -> new IngredientForecastDto(id, ingName, unit, df.getLabels(), new HashMap<>(), new HashMap<>()));
+                        id -> new IngredientForecastDto(id, ingName, unit, new HashMap<>(), new HashMap<>(), new HashMap<>()));
                 for (String scale : df.getLabels().keySet()) {
+                    dto.getLabels().putIfAbsent(scale, new ArrayList<>(df.getLabels().get(scale)));
                     List<Integer> aList = df.getActualData().get(scale);
                     List<Integer> fList = df.getForecastData().get(scale);
                     List<Integer> aAgg = dto.getActualData().computeIfAbsent(scale,
@@ -127,6 +113,27 @@ public class IngredientForecastService {
             }
         }
         return aggMap;
+    }
+
+    private void persistForecasts(Collection<IngredientForecastDto> dtos) {
+        forecastRepository.deleteByGeneratedAtBefore(java.time.LocalDate.now());
+        for (IngredientForecastDto dto : dtos) {
+            Ingredient ingredient = ingredientRepository.findById(dto.getId()).orElse(null);
+            if (ingredient == null) continue;
+            List<Integer> monthly = dto.getForecastData().get("monthly");
+            List<String> labels = dto.getLabels().get("monthly");
+            if (monthly == null || labels == null) continue;
+            for (int i = 0; i < monthly.size(); i++) {
+                Integer val = monthly.get(i);
+                if (val == null) continue;
+                IngredientForecast entity = new IngredientForecast();
+                entity.setIngredient(ingredient);
+                entity.setDate(java.time.YearMonth.parse(labels.get(i)).atDay(1));
+                entity.setQuantity(val);
+                entity.setGeneratedAt(java.time.LocalDate.now());
+                forecastRepository.save(entity);
+            }
+        }
     }
 
     public java.util.List<IngredientForecast> getDetails(long ingredientId) {
