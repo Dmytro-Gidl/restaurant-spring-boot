@@ -4,12 +4,15 @@ import com.exampleepam.restaurant.entity.Order;
 import com.exampleepam.restaurant.entity.OrderItem;
 import com.exampleepam.restaurant.entity.Review;
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class RatingMatrixBuilder {
 
     public RatingData build(List<Review> reviews, List<Order> orders) {
+        log.debug("Building rating matrix from {} reviews and {} orders", reviews.size(), orders.size());
         Map<Long, Map<Long, Double>> matrix = new HashMap<>();
         Map<Long, List<Integer>> temp = new HashMap<>();
         Map<Long, Double> means = new HashMap<>();
@@ -38,6 +41,8 @@ public class RatingMatrixBuilder {
                 d.setValue(d.getValue() - mean);
             }
         }
+        log.debug("Rating matrix built for {} users and {} dishes", matrix.size(),
+                matrix.values().stream().mapToInt(Map::size).max().orElse(0));
         return new RatingData(matrix, means);
     }
 

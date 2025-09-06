@@ -2,9 +2,10 @@ package com.exampleepam.restaurant.service.recommendation;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class CollaborativePredictor {
 
@@ -42,6 +43,7 @@ public class CollaborativePredictor {
             double norm = similaritySums.getOrDefault(dishId, 1.0);
             preds.put(dishId, targetMean + scoreSums.get(dishId) / norm);
         }
+        log.debug("Collaborative predictor produced {} dish scores for user {}", preds.size(), userId);
         return preds;
     }
 

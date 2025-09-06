@@ -2,19 +2,34 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Forecasting Help</title>
+    <title>Forecast guide</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+            url('/images/saveInPhotoshop.png') no-repeat center center;
+            background-size: cover;
+            color: #fff;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+        }
+    </style>
 </head>
-<body class="bg-dark text-light">
-<div class="container my-4">
-    <h2>Forecasting models</h2>
-    <p>This page explains the dish forecast options in everyday language.</p>
+<body>
+<div th:replace="fragments/topnav :: navbar"></div>
+<div class="container my-4 text-light">
+    <h2>Forecast guide</h2>
+    <p>Use these notes to choose a forecasting method. The examples show how each option behaves.</p>
     <ul>
-        <li><strong>Holt‑Winters</strong>: follows the recent trend and smooths out bumps. It is the default choice and works well when demand changes gradually.</li>
-        <li><strong>ARIMA&nbsp;(1,0,0)</strong>: looks mostly at the last month to guess the next. Use it when numbers swing up and down around an average.</li>
-        <li><strong>Auto‑ARIMA</strong>: tries a couple of simple patterns and picks the one that fits recent data best.</li>
+        <li><strong>Holt‑Winters</strong> follows gradual trends. Example: monthly sales of 5, 10, 15 will continue upward.</li>
+        <li><strong>ARIMA&nbsp;(1,0,0)</strong> reacts quickly to recent swings. Example: alternating 20 and 5 is tracked closely.</li>
+        <li><strong>Auto‑ARIMA</strong> tests a few simple patterns and keeps the one that fits best. Sparse data often yields a flat line.</li>
     </ul>
-    <p>If only a few scattered months of orders exist, all models may show the same flat line. More completed orders are needed to see real differences.</p>
+    <p>With only a handful of completed months, all models may show the same flat forecast. Add more finished orders for clearer differences.</p>
+    <p>Sample datasets for experimentation are available in <code>docs/forecast-scenarios.sql</code>.</p>
     <a href="/admin/dish-forecast" class="btn btn-outline-light mt-3">Back to forecasts</a>
 </div>
 </body>

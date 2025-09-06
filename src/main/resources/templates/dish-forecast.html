@@ -64,9 +64,16 @@
         </form>
     </div>
 
-    <details class="text-light mb-3">
-        <summary>Methodology</summary>
-        <p class="mb-0">Leading zero-demand months are trimmed and single remaining points trigger a naive repeat forecast. Models are evaluated via k-fold cross-validation and full details are documented in <a href="/docs/forecasting.md" class="text-decoration-underline text-light">docs/forecasting.md</a>. For a plain-language overview, see the <a href="/admin/dish-forecast/about" class="text-decoration-underline text-light">forecasting help page</a>.</p>
+    <details class="mb-3">
+        <summary class="text-info">How forecasts work</summary>
+        <div class="card card-body bg-dark text-light mt-2">
+            <ul class="mb-1">
+                <li>Months before the first order are ignored.</li>
+                <li>If only one month has orders, that number is repeated.</li>
+                <li>Models are scored using k-fold cross-validation.</li>
+            </ul>
+            <p class="mb-0">See the <a href="/docs/forecasting.md" class="text-decoration-underline text-light">full guide</a> or visit the <a href="/admin/dish-forecast/about" class="text-decoration-underline text-light">help page</a> for examples.</p>
+        </div>
     </details>
 
     <div class="row justify-content-center mb-4" th:if="${summary != null}">
