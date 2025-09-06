@@ -37,14 +37,17 @@
             <tbody>
             <tr th:each="m : ${metrics.entrySet()}">
                 <td th:text="${m.key}"></td>
-                <td th:text="${#numbers.formatDecimal(m.value.mape,1,2)}"></td>
-                <td th:text="${#numbers.formatDecimal(m.value.rmse,1,2)}"></td>
+                <td th:text="${T(java.lang.Double).isNaN(m.value.mape) ? 'n/a' : #numbers.formatDecimal(m.value.mape,1,2)}"></td>
+                <td th:text="${T(java.lang.Double).isNaN(m.value.rmse) ? 'n/a' : #numbers.formatDecimal(m.value.rmse,1,2)}"></td>
             </tr>
             </tbody>
         </table>
     </div>
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0" th:text="#{dishForecast.title}">Dish Forecast</h2>
+        <div class="d-flex align-items-center">
+            <h2 class="mb-0" th:text="#{dishForecast.title}">Dish Forecast</h2>
+            <a href="/admin/dish-forecast/about" class="btn btn-sm btn-outline-light ms-3">Help</a>
+        </div>
         <form class="d-flex" method="get" th:action="@{/admin/dish-forecast}">
             <select name="model" class="form-select form-select-sm me-2 bg-dark text-light border-secondary">
                 <option th:each="m : ${models}" th:value="${m}" th:text="${m}" th:selected="${model == m}"></option>
@@ -63,7 +66,7 @@
 
     <details class="text-light mb-3">
         <summary>Methodology</summary>
-        <p class="mb-0">Forecasts are produced using Holt-Winters triple exponential smoothing. Parameters are tuned via grid search to minimise RMSE. Accuracy metrics are shown in each dish's details panel.</p>
+        <p class="mb-0">Leading zero-demand months are trimmed and single remaining points trigger a naive repeat forecast. Models are evaluated via k-fold cross-validation and full details are documented in <a href="/docs/forecasting.md" class="text-decoration-underline text-light">docs/forecasting.md</a>.</p>
     </details>
 
     <div class="row justify-content-center mb-4" th:if="${summary != null}">
@@ -73,9 +76,9 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0" th:text="#{dishForecast.total}">Total</h5>
                         <select id="summary-scale" class="form-select form-select-sm bg-dark text-light border-secondary w-auto" th:title="#{dishForecast.scale}">
-                            <option value="hourly" th:text="#{dishForecast.hourly}">Hourly</option>
+                            <option value="monthly" th:text="#{dishForecast.monthly}" selected>Monthly</option>
                             <option value="daily" th:text="#{dishForecast.daily}">Daily</option>
-                            <option value="monthly" th:text="#{dishForecast.monthly}">Monthly</option>
+                            <option value="hourly" th:text="#{dishForecast.hourly}">Hourly</option>
                         </select>
                     </div>
                     <div class="chart-container" style="height:300px;">
@@ -98,9 +101,9 @@
                         </div>
                         <select class="form-select form-select-sm bg-dark text-light border-secondary w-auto"
                                 th:attr="id=${'scale-' + f.id}" th:title="#{dishForecast.scale}">
-                            <option value="hourly" th:text="#{dishForecast.hourly}">Hourly</option>
+                            <option value="monthly" th:text="#{dishForecast.monthly}" selected>Monthly</option>
                             <option value="daily" th:text="#{dishForecast.daily}">Daily</option>
-                            <option value="monthly" th:text="#{dishForecast.monthly}">Monthly</option>
+                            <option value="hourly" th:text="#{dishForecast.hourly}">Hourly</option>
                         </select>
                     </div>
                     <div class="chart-container">
@@ -159,7 +162,11 @@ function loadDetails(id) {
             if (d && d.result) {
                 const r = d.result;
                 const ci = r.lower.length ? `[${r.lower[0].toFixed(2)}, ${r.upper[0].toFixed(2)}]` : 'n/a';
-                el.innerText = `α=${r.alpha.toFixed(2)}, β=${r.beta.toFixed(2)}, γ=${r.gamma.toFixed(2)}, MAPE=${r.mape.toFixed(2)}, RMSE=${r.rmse.toFixed(2)}, CI=${ci}`;
+                let text = `α=${r.alpha.toFixed(2)}, β=${r.beta.toFixed(2)}, γ=${r.gamma.toFixed(2)}, MAPE=${r.mape.toFixed(2)}, RMSE=${r.rmse.toFixed(2)}, CI=${ci}`;
+                if (d.singlePoint) {
+                    text += ' — based on a single month; add more completed orders for better forecasts';
+                }
+                el.innerText = text;
             }
         });
 }
@@ -167,28 +174,38 @@ function loadDetails(id) {
 const todayHourIndex = 7 * 24; // data starts 7 days before today
 const initialRanges = {
     hourly: { min: todayHourIndex - 24, max: todayHourIndex + 24 },
-    daily: { min: 30 - 7, max: 30 + 7 },
-    monthly: { min: 24 - 6, max: 24 + 6 }
+    daily: { min: 30 - 7, max: 30 + 7 }
 };
+
+function monthlyRange(labels) {
+    const current = new Date().toISOString().slice(0,7);
+    const idx = labels.indexOf(current);
+    const pos = idx >= 0 ? idx : 0;
+    return {
+        min: Math.max(0, pos - 6),
+        max: Math.min(labels.length - 1, pos + 6)
+    };
+}
 
 if (summary) {
     const ctx = document.getElementById('summary-chart').getContext('2d');
-    const maxIndex = summary.labels.hourly.length - 1;
+    const maxIndex = summary.labels.monthly.length - 1;
+    const monthRange = monthlyRange(summary.labels.monthly);
     const sChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: summary.labels.hourly,
+            labels: summary.labels.monthly,
             datasets: [
                 {
                     label: /*[[#{dishForecast.actual}]]*/ 'Actual',
-                    data: summary.actualData.hourly,
+                    data: summary.actualData.monthly,
                     borderColor: 'rgba(75, 192, 192, 1)',
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     spanGaps: true
                 },
                 {
                     label: /*[[#{dishForecast.predicted}]]*/ 'Forecast',
-                    data: summary.forecastData.hourly,
+                    data: summary.forecastData.monthly,
                     borderColor: 'rgba(255, 159, 64, 1)',
                     backgroundColor: 'rgba(255, 159, 64, 0.2)',
                     spanGaps: true
@@ -201,8 +218,8 @@ if (summary) {
             interaction: { mode: 'index', intersect: false },
             scales: {
                 x: {
-                    min: initialRanges.hourly.min,
-                    max: initialRanges.hourly.max,
+                    min: monthRange.min,
+                    max: monthRange.max,
                     ticks: { color: '#fff' },
                     grid: { color: 'rgba(255,255,255,0.1)' }
                 },
@@ -251,32 +268,33 @@ if (summary) {
         info.chart.data.labels = info.data.labels[scale];
         info.chart.data.datasets[0].data = info.data.actualData[scale];
         info.chart.data.datasets[1].data = info.data.forecastData[scale];
-        const range = initialRanges[scale];
+        const range = scale === 'monthly' ? monthlyRange(info.data.labels.monthly) : initialRanges[scale];
         info.maxIndex = info.data.labels[scale].length - 1;
         info.chart.options.scales.x.min = range.min;
-        info.chart.options.scales.x.max = range.max;
+        info.chart.options.scales.x.max = Math.min(range.max, info.maxIndex);
         updateYScale(info.chart);
         info.chart.update();
     });
 }
 forecasts.forEach(f => {
     const ctx = document.getElementById('chart-' + f.id).getContext('2d');
-    const maxIndex = f.labels.hourly.length - 1;
+    const maxIndex = f.labels.monthly.length - 1;
+    const monthRange = monthlyRange(f.labels.monthly);
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: f.labels.hourly,
+            labels: f.labels.monthly,
             datasets: [
                 {
                     label: /*[[#{dishForecast.actual}]]*/ 'Actual',
-                    data: f.actualData.hourly,
+                    data: f.actualData.monthly,
                     borderColor: 'rgba(75, 192, 192, 1)',
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     spanGaps: true
                 },
                 {
                     label: /*[[#{dishForecast.predicted}]]*/ 'Forecast',
-                    data: f.forecastData.hourly,
+                    data: f.forecastData.monthly,
                     borderColor: 'rgba(255, 159, 64, 1)',
                     backgroundColor: 'rgba(255, 159, 64, 0.2)',
                     spanGaps: true
@@ -289,8 +307,8 @@ forecasts.forEach(f => {
             interaction: { mode: 'index', intersect: false },
             scales: {
                 x: {
-                    min: initialRanges.hourly.min,
-                    max: initialRanges.hourly.max,
+                    min: monthRange.min,
+                    max: monthRange.max,
                     ticks: { color: '#fff' },
                     grid: { color: 'rgba(255,255,255,0.1)' }
                 },
@@ -352,10 +370,10 @@ forecasts.forEach(f => {
         info.chart.data.labels = info.data.labels[scale];
         info.chart.data.datasets[0].data = info.data.actualData[scale];
         info.chart.data.datasets[1].data = info.data.forecastData[scale];
-        const range = initialRanges[scale];
+        const range = scale === 'monthly' ? monthlyRange(info.data.labels.monthly) : initialRanges[scale];
         info.maxIndex = info.data.labels[scale].length - 1;
         info.chart.options.scales.x.min = range.min;
-        info.chart.options.scales.x.max = range.max;
+        info.chart.options.scales.x.max = Math.min(range.max, info.maxIndex);
         updateYScale(info.chart);
         info.chart.update();
     });

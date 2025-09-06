@@ -29,4 +29,14 @@ public class ForecastModelTest {
         ForecastResult r = model.forecast(List.of(5,5,5,5), 1);
         assertEquals(5, Math.round(r.getForecasts().get(0)));
     }
+
+    @Test
+    void arimaRepeatsSingleObservation() {
+        ArimaModel model = new ArimaModel();
+        ForecastResult r = model.forecast(List.of(7), 3);
+        assertEquals(3, r.getForecasts().size());
+        for (double v : r.getForecasts()) {
+            assertEquals(7.0, v);
+        }
+    }
 }
