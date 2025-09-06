@@ -1,5 +1,6 @@
 package com.exampleepam.restaurant.service.forecast;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.List;
  * generated recursively. This lightweight model allows comparison with
  * Holt-Winters without pulling additional dependencies.
  */
+@Slf4j
 @Component
 public class ArimaModel implements ForecastModel {
 
@@ -22,8 +24,17 @@ public class ArimaModel implements ForecastModel {
 
     @Override
     public ForecastResult forecast(List<Integer> history, int periods) {
-        if (history.size() < 2) {
+        log.debug("ARIMA forecast requested with history={} periods={}", history, periods);
+        if (history.isEmpty()) {
+            log.debug("No history provided; returning zeros");
             return new ForecastResult(Collections.nCopies(periods, 0d), 0, 0, 0, 0, 0,
+                    Collections.nCopies(periods, 0d), Collections.nCopies(periods, 0d));
+        }
+        if (history.size() == 1) {
+            double val = history.get(0);
+            log.debug("Single data point {} – repeating for naive forecast", val);
+            List<Double> forecasts = new ArrayList<>(Collections.nCopies(periods, val));
+            return new ForecastResult(forecasts, 1, 0, 0, 0, 0,
                     Collections.nCopies(periods, 0d), Collections.nCopies(periods, 0d));
         }
         int n = history.size();
@@ -42,6 +53,7 @@ public class ArimaModel implements ForecastModel {
             last = phi * last;
             forecasts.add(last);
         }
+        log.debug("ARIMA phi={} last={} forecasts={}", phi, history.get(n - 1), forecasts);
         // diagnostics on training data
         List<Double> actual = new ArrayList<>();
         List<Double> fitted = new ArrayList<>();

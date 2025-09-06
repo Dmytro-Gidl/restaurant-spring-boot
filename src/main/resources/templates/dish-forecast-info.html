@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Forecasting Help</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+</head>
+<body class="bg-dark text-light">
+<div class="container my-4">
+    <h2>Forecasting models</h2>
+    <p>This page explains the dish forecast options in everyday language.</p>
+    <ul>
+        <li><strong>Holt‑Winters</strong>: follows the recent trend and smooths out bumps. It is the default choice and works well when demand changes gradually.</li>
+        <li><strong>ARIMA&nbsp;(1,0,0)</strong>: looks mostly at the last month to guess the next. Use it when numbers swing up and down around an average.</li>
+        <li><strong>Auto‑ARIMA</strong>: tries a couple of simple patterns and picks the one that fits recent data best.</li>
+    </ul>
+    <p>If only a few scattered months of orders exist, all models may show the same flat line. More completed orders are needed to see real differences.</p>
+    <a href="/admin/dish-forecast" class="btn btn-outline-light mt-3">Back to forecasts</a>
+</div>
+</body>
+</html>
