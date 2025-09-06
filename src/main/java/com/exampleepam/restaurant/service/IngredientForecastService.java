@@ -17,6 +17,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,6 +33,7 @@ public class IngredientForecastService {
     private final DishRepository dishRepository;
     private final IngredientRepository ingredientRepository;
     private final IngredientForecastRepository forecastRepository;
+    private static final Logger log = LoggerFactory.getLogger(IngredientForecastService.class);
 
     @Autowired
     public IngredientForecastService(DishForecastService dishForecastService,
@@ -53,43 +56,31 @@ public class IngredientForecastService {
                                                              String modelName, Pageable pageable) {
         Map<Long, Dish> dishMap = dishRepository.findAll().stream()
                 .collect(Collectors.toMap(Dish::getId, d -> d));
-        Page<DishForecastDto> dishForecasts = dishForecastService.getDishForecasts(historyDays, null, type, modelName, Pageable.unpaged());
-        Map<Long, IngredientForecastDto> aggMap = aggregateForecasts(dishForecasts, dishMap, filter);
-
-        forecastRepository.deleteByGeneratedAtBefore(java.time.LocalDate.now());
+        Page<DishForecastDto> dishForecasts = fetchDishForecasts(historyDays, type, modelName);
+        log.debug("Fetched {} dish forecasts for ingredients", dishForecasts.getContent().size());
+        Map<Long, IngredientForecastDto> aggMap = aggregateIngredientData(dishForecasts, dishMap, filter);
+        log.debug("Aggregated to {} ingredient entries", aggMap.size());
+        persistForecasts(aggMap.values());
         List<IngredientForecastDto> list = new ArrayList<>(aggMap.values());
-        for (IngredientForecastDto dto : list) {
-            Ingredient ingredient = ingredientRepository.findById(dto.getId()).orElse(null);
-            if (ingredient == null) continue;
-            List<Integer> monthly = dto.getForecastData().get("monthly");
-            List<String> labels = dto.getLabels().get("monthly");
-            if (monthly != null && labels != null) {
-                for (int i = 0; i < monthly.size(); i++) {
-                    Integer val = monthly.get(i);
-                    if (val == null) continue;
-                    IngredientForecast entity = new IngredientForecast();
-                    entity.setIngredient(ingredient);
-                    entity.setDate(java.time.YearMonth.parse(labels.get(i)).atDay(1));
-                    entity.setQuantity(val);
-                    entity.setGeneratedAt(java.time.LocalDate.now());
-                    forecastRepository.save(entity);
-                }
-            }
-        }
         list.sort(Comparator.comparing(IngredientForecastDto::getName));
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), list.size());
         List<IngredientForecastDto> content = start > end ? Collections.emptyList() : list.subList(start, end);
+        log.debug("Returning {} ingredient forecasts", content.size());
         return new PageImpl<>(content, pageable, list.size());
+    }
+
+    private Page<DishForecastDto> fetchDishForecasts(int historyDays, Category type, String modelName) {
+        return dishForecastService.getDishForecasts(historyDays, null, type, modelName, Pageable.unpaged());
     }
 
     /**
      * Combine dish forecasts into ingredient-level projections and apply an
      * optional ingredient name filter.
      */
-    private Map<Long, IngredientForecastDto> aggregateForecasts(Page<DishForecastDto> dishForecasts,
-                                                                Map<Long, Dish> dishMap,
-                                                                String filter) {
+    private Map<Long, IngredientForecastDto> aggregateIngredientData(Page<DishForecastDto> dishForecasts,
+                                                                     Map<Long, Dish> dishMap,
+                                                                     String filter) {
         Map<Long, IngredientForecastDto> aggMap = new LinkedHashMap<>();
         String f = filter == null ? null : filter.toLowerCase();
         for (DishForecastDto df : dishForecasts.getContent()) {
@@ -105,28 +96,66 @@ public class IngredientForecastService {
                 MeasureUnit unit = di.getIngredient().getUnit();
                 IngredientForecastDto dto = aggMap.computeIfAbsent(
                         di.getIngredient().getId(),
-                        id -> new IngredientForecastDto(id, ingName, unit, df.getLabels(), new HashMap<>(), new HashMap<>()));
+                        id -> new IngredientForecastDto(id, ingName, unit,
+                                new HashMap<>(), new HashMap<>(), new HashMap<>(), false, false));
                 for (String scale : df.getLabels().keySet()) {
+                    dto.getLabels().putIfAbsent(scale, new ArrayList<>(df.getLabels().get(scale)));
                     List<Integer> aList = df.getActualData().get(scale);
                     List<Integer> fList = df.getForecastData().get(scale);
+                    if (aList == null || fList == null) {
+                        continue; // nothing to aggregate
+                    }
                     List<Integer> aAgg = dto.getActualData().computeIfAbsent(scale,
-                            s -> new ArrayList<>(Collections.nCopies(aList.size(), 0)));
+                            s -> new ArrayList<>(Collections.nCopies(aList.size(), null)));
                     List<Integer> fAgg = dto.getForecastData().computeIfAbsent(scale,
-                            s -> new ArrayList<>(Collections.nCopies(fList.size(), 0)));
+                            s -> new ArrayList<>(Collections.nCopies(fList.size(), null)));
                     for (int i = 0; i < aList.size(); i++) {
                         Integer aVal = aList.get(i);
                         if (aVal != null) {
-                            aAgg.set(i, aAgg.get(i) + aVal * di.getQuantity());
+                            Integer curA = aAgg.get(i);
+                            aAgg.set(i, (curA == null ? 0 : curA) + aVal * di.getQuantity());
                         }
                         Integer fVal = fList.get(i);
                         if (fVal != null) {
-                            fAgg.set(i, fAgg.get(i) + fVal * di.getQuantity());
+                            Integer curF = fAgg.get(i);
+                            fAgg.set(i, (curF == null ? 0 : curF) + fVal * di.getQuantity());
                         }
                     }
                 }
             }
         }
+        aggMap.values().forEach(dto -> {
+            List<Integer> monthly = dto.getActualData().get("monthly");
+            long nonZero = monthly == null ? 0 : monthly.stream().filter(v -> v != null && v > 0).count();
+            dto.setNoData(nonZero == 0);
+            dto.setSinglePoint(nonZero == 1);
+            log.debug("Ingredient {} monthly totals {}", dto.getName(), monthly);
+        });
         return aggMap;
+    }
+
+    private void persistForecasts(Collection<IngredientForecastDto> dtos) {
+        forecastRepository.deleteByGeneratedAtBefore(java.time.LocalDate.now());
+        int saved = 0;
+        for (IngredientForecastDto dto : dtos) {
+            Ingredient ingredient = ingredientRepository.findById(dto.getId()).orElse(null);
+            if (ingredient == null) continue;
+            List<Integer> monthly = dto.getForecastData().get("monthly");
+            List<String> labels = dto.getLabels().get("monthly");
+            if (monthly == null || labels == null) continue;
+            for (int i = 0; i < monthly.size(); i++) {
+                Integer val = monthly.get(i);
+                if (val == null) continue;
+                IngredientForecast entity = new IngredientForecast();
+                entity.setIngredient(ingredient);
+                entity.setDate(java.time.YearMonth.parse(labels.get(i)).atDay(1));
+                entity.setQuantity(val);
+                entity.setGeneratedAt(java.time.LocalDate.now());
+                forecastRepository.save(entity);
+                saved++;
+            }
+        }
+        log.debug("Persisted {} ingredient forecast rows", saved);
     }
 
     public java.util.List<IngredientForecast> getDetails(long ingredientId) {
