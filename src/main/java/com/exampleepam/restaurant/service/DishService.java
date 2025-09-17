@@ -13,6 +13,8 @@ import com.exampleepam.restaurant.util.FileUploadUtil;
 import com.exampleepam.restaurant.util.FolderDeleteUtil;
 import com.exampleepam.restaurant.util.ServiceUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +33,10 @@ import java.util.Locale;
  */
 @Service
 public class DishService {
+    private static final String CACHE_DISH_PAGES = "dishPages";
+    private static final String CACHE_DISH_BY_CATEGORY = "dishCategory";
+    private static final String CACHE_DISH_ALL = "dishAll";
+    private static final String CACHE_DISH_BY_ID = "dishById";
     private final DishRepository dishRepository;
     private final DishMapper dishMapper;
     private final ServiceUtil serviceUtil;
@@ -57,6 +63,8 @@ public class DishService {
      * @return a Paged object with a sorted and filtered by category list of DishResponseDTOs
      * or an empty list if nothing is found
      */
+    @Cacheable(cacheNames = CACHE_DISH_PAGES,
+            key = "T(java.util.Arrays).asList(#currentPage, #pageSize, #sortField, #sortDir, #category)")
     public Paged<DishResponseDto> findPaginated(int currentPage, int pageSize, String sortField,
                                                 String sortDir, String category) {
 
@@ -95,6 +103,12 @@ public class DishService {
      * @param dishCreationDto dish to be saved
      * @return persisted id
      */
+    @CacheEvict(cacheNames = {
+            CACHE_DISH_PAGES,
+            CACHE_DISH_BY_CATEGORY,
+            CACHE_DISH_ALL,
+            CACHE_DISH_BY_ID
+    }, allEntries = true)
     public long save(DishCreationDto dishCreationDto) {
         Dish dish = dishMapper.toDish(dishCreationDto);
         return dishRepository.save(dish).getId();
@@ -107,6 +121,12 @@ public class DishService {
      * @param multipartFile   image to be saved
      * @return persisted dish id
      */
+    @CacheEvict(cacheNames = {
+            CACHE_DISH_PAGES,
+            CACHE_DISH_BY_CATEGORY,
+            CACHE_DISH_ALL,
+            CACHE_DISH_BY_ID
+    }, allEntries = true)
     public long saveWithFiles(DishCreationDto dishCreationDto, java.util.List<MultipartFile> multipartFiles) {
         Dish dish = dishMapper.toDish(dishCreationDto);
         long persistedDishId = dishRepository.save(dish).getId();
@@ -130,6 +150,12 @@ public class DishService {
     /**
      * Updates existing dish and processes image additions/removals.
      */
+    @CacheEvict(cacheNames = {
+            CACHE_DISH_PAGES,
+            CACHE_DISH_BY_CATEGORY,
+            CACHE_DISH_ALL,
+            CACHE_DISH_BY_ID
+    }, allEntries = true)
     public void updateWithFiles(DishCreationDto dto, java.util.List<MultipartFile> newFiles,
                                 java.util.Map<String, MultipartFile> replaceFiles,
                                 java.util.List<String> deleteFileNames) {
@@ -164,6 +190,12 @@ public class DishService {
     /**
      * Legacy method for backward compatibility when only one file was supported.
      */
+    @CacheEvict(cacheNames = {
+            CACHE_DISH_PAGES,
+            CACHE_DISH_BY_CATEGORY,
+            CACHE_DISH_ALL,
+            CACHE_DISH_BY_ID
+    }, allEntries = true)
     public long saveWithFile(DishCreationDto dto, MultipartFile file) {
         java.util.List<MultipartFile> list = new java.util.ArrayList<>();
         list.add(file);
@@ -177,6 +209,7 @@ public class DishService {
      * @param id Dish id
      * @return persisted id
      */
+    @Cacheable(cacheNames = CACHE_DISH_BY_ID, key = "#id")
     public DishResponseDto getDishById(long id) {
         Dish dish = dishRepository.getById(id);
         DishResponseDto dto = dishMapper.toDishResponseDto(dish);
@@ -193,6 +226,8 @@ public class DishService {
      * @param category  filter category
      * @return a list of DishResponseDTOs
      */
+    @Cacheable(cacheNames = CACHE_DISH_BY_CATEGORY,
+            key = "T(java.util.Arrays).asList(#sortField, #sortDir, #category)")
     public List<DishResponseDto> findDishesByCategorySorted(String sortField,
                                                             String sortDir, String category) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
@@ -211,6 +246,8 @@ public class DishService {
      * @param sortDir   sort direction for rows
      * @return a list of DishResponseDTOs
      */
+    @Cacheable(cacheNames = CACHE_DISH_ALL,
+            key = "T(java.util.Arrays).asList(#sortField, #sortDir)")
     public List<DishResponseDto> findAllDishesSorted(String sortField, String sortDir) {
         Sort sort = serviceUtil.getSort(sortField, sortDir);
         List<Dish> dishes = dishRepository.findAllByArchivedFalse(sort);
@@ -244,6 +281,12 @@ public class DishService {
      *
      * @param id id of the Dish to be archived
      */
+    @CacheEvict(cacheNames = {
+            CACHE_DISH_PAGES,
+            CACHE_DISH_BY_CATEGORY,
+            CACHE_DISH_ALL,
+            CACHE_DISH_BY_ID
+    }, allEntries = true)
     public void archiveDishById(long id) {
         dishRepository.findById(id).ifPresent(dish -> {
             dish.setArchived(true);
@@ -254,6 +297,12 @@ public class DishService {
     /**
      * Alias for archiveDishById used by tests.
      */
+    @CacheEvict(cacheNames = {
+            CACHE_DISH_PAGES,
+            CACHE_DISH_BY_CATEGORY,
+            CACHE_DISH_ALL,
+            CACHE_DISH_BY_ID
+    }, allEntries = true)
     public void deleteDishById(long id) {
         archiveDishById(id);
     }
@@ -261,6 +310,12 @@ public class DishService {
     /**
      * Restore an archived Dish so it appears on the menu again.
      */
+    @CacheEvict(cacheNames = {
+            CACHE_DISH_PAGES,
+            CACHE_DISH_BY_CATEGORY,
+            CACHE_DISH_ALL,
+            CACHE_DISH_BY_ID
+    }, allEntries = true)
     public void restoreDishById(long id) {
         dishRepository.findById(id).ifPresent(dish -> {
             dish.setArchived(false);
@@ -271,6 +326,12 @@ public class DishService {
     /**
      * Permanently delete a Dish and its files.
      */
+    @CacheEvict(cacheNames = {
+            CACHE_DISH_PAGES,
+            CACHE_DISH_BY_CATEGORY,
+            CACHE_DISH_ALL,
+            CACHE_DISH_BY_ID
+    }, allEntries = true)
     public void hardDeleteDish(long id) {
         dishRepository.deleteById(id);
         FolderDeleteUtil.deleteDishFolder(id);
