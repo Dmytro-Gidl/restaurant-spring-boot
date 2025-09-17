@@ -154,7 +154,7 @@ public class DishForecastService {
         actualMap.put("hourly", hourly.actual());
         forecastMap.put("hourly", hourly.forecast());
 
-        return new DishForecastDto(id, dish.getName(), dish.getImagePath(), labelsMap, actualMap, forecastMap,
+        return new DishForecastDto(id, dish.getName(), dish.getimagePath(), labelsMap, actualMap, forecastMap,
                 monthResult.singlePoint(), monthResult.noData());
     }
 

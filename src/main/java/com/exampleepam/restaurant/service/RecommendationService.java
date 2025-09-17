@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class RecommendationService {
+
+    private static final double BLEND_ALPHA_CF = 0.6; // вес коллаборативных предсказаний
 
     private final DishRepository dishRepository;
     private final DishMapper dishMapper;
@@ -43,13 +47,13 @@ public class RecommendationService {
 
     @Autowired
     public RecommendationService(DishRepository dishRepository,
-                                  DishMapper dishMapper,
-                                  ReviewRepository reviewRepository,
-                                  OrderRepository orderRepository,
-                                  FactorizationService factorizationService,
-                                  RatingMatrixBuilder ratingMatrixBuilder,
-                                  CollaborativePredictor collaborativePredictor,
-                                  CategoryFallback categoryFallback) {
+                                 DishMapper dishMapper,
+                                 ReviewRepository reviewRepository,
+                                 OrderRepository orderRepository,
+                                 FactorizationService factorizationService,
+                                 RatingMatrixBuilder ratingMatrixBuilder,
+                                 CollaborativePredictor collaborativePredictor,
+                                 CategoryFallback categoryFallback) {
         this.dishRepository = dishRepository;
         this.dishMapper = dishMapper;
         this.reviewRepository = reviewRepository;
@@ -61,22 +65,13 @@ public class RecommendationService {
     }
 
     /**
-     * Recommend dishes for a user using a simple collaborative filtering
-     * approach. Ratings of other users are used to predict how much the
-     * specified user might like a dish. Only dishes the user has not rated are
-     * considered and the resulting list is ordered by the predicted score.
-     *
-     * @param userId id of the user for which recommendations are generated
-     * @param limit  maximum number of dishes to return
-     * @return list of recommended dishes, possibly empty
+     * Recommend dishes for a user using a simple collaborative filtering approach.
      */
     public List<DishResponseDto> getRecommendedDishes(long userId, int limit) {
+        if (limit <= 0) return List.of();
+
         log.debug("Generating recommendations for user {} limit {}", userId, limit);
         List<Review> reviews = reviewRepository.findAllWithUserAndDish();
-        // Fetch completed orders without using LocalDateTime.MIN which can cause
-        // serialisation issues with some JDBC drivers. All completed orders are
-        // included, as the recommendation algorithms handle their own recency
-        // weighting.
         List<Order> orders = orderRepository.findByStatus(Status.COMPLETED);
         log.debug("Loaded {} reviews and {} completed orders for recommendation", reviews.size(), orders.size());
         if (reviews.isEmpty() && orders.isEmpty()) {
@@ -88,21 +83,42 @@ public class RecommendationService {
         Map<Long, Map<Long, Double>> ratingMatrix = ratingData.matrix();
         Map<Long, Double> userMeans = ratingData.means();
         Map<Long, Double> targetRatings = ratingMatrix.getOrDefault(userId, Map.of());
-        Map<Long, Double> predictedRatings = collaborativePredictor.predict(userId, ratingData);
+
+        Map<Long, Double> cfRaw = collaborativePredictor.predict(userId, ratingData);
+        Map<Long, Double> predictedRatings = new HashMap<>(cfRaw == null ? Map.of() : cfRaw);
+
         if (!factorizationService.isReady()) {
             factorizationService.train(reviews, orders);
             log.debug("Trained factorization model");
         }
-        for (Long dishId : ratingMatrix.keySet()) {
-            // no-op, ensures factor vectors for known dishes/users
+
+        Set<Long> allDishIds = new HashSet<>();
+        for (Review r : reviews) {
+            if (r.getDish() != null) allDishIds.add(r.getDish().getId());
         }
-        java.util.Set<Long> allDishIds = new java.util.HashSet<>();
-        for (Review r : reviews) allDishIds.add(r.getDish().getId());
+        for (Order o : orders) {
+            if (o.getOrderItems() == null) continue;
+            for (OrderItem it : o.getOrderItems()) {
+                if (it.getDish() != null) allDishIds.add(it.getDish().getId());
+            }
+        }
+
+        Map<Long, Double> mfScores = new HashMap<>();
         for (Long dishId : allDishIds) {
-            if (targetRatings.containsKey(dishId)) continue;
+            if (targetRatings.containsKey(dishId)) continue; // не предлагаем уже оценённые
             double pred = factorizationService.predict(userId, dishId);
-            predictedRatings.merge(dishId, pred, (a,b) -> (a+b)/2);
+            mfScores.put(dishId, pred);
         }
+
+        Map<Long, Double> cfNorm = normalizeZ(predictedRatings);
+        Map<Long, Double> mfNorm = normalizeZ(mfScores);
+        Map<Long, Double> blended = blend(cfNorm, mfNorm, BLEND_ALPHA_CF);
+
+        predictedRatings.clear();
+        predictedRatings.putAll(blended);
+
+        predictedRatings.keySet().removeAll(targetRatings.keySet());
+
         log.debug("Predicted ratings for {} dishes", predictedRatings.size());
         if (predictedRatings.isEmpty()) {
             log.debug("Using category-based fallback only");
@@ -111,31 +127,62 @@ public class RecommendationService {
             log.debug("Using collaborative and factorization predictions");
         }
 
-        Set<Long> dishIds = predictedRatings.keySet();
-        List<Dish> dishes = dishRepository.findAllById(dishIds);
+        int k = Math.min(predictedRatings.size(), Math.max(limit, limit * 3));
+        List<Long> topIds = predictedRatings.entrySet().stream()
+                .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
+                .limit(k)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        List<Dish> dishes = dishRepository.findAllById(topIds);
         List<DishResponseDto> dtos = dishMapper.toDishResponseDtoList(dishes);
         assignAverageRatings(dtos);
         assignReviewCounts(dtos);
 
-        dtos.sort(Comparator.comparingDouble(d -> -predictedRatings.getOrDefault(d.getId(), 0.0)));
+        dtos.sort(Comparator
+                .<DishResponseDto>comparingDouble(d -> -predictedRatings.getOrDefault(d.getId(), 0.0))
+                .thenComparing(Comparator.comparingDouble(DishResponseDto::getAverageRating).reversed())
+                .thenComparing(DishResponseDto::getReviewCount, Comparator.reverseOrder())
+        );
+
         List<DishResponseDto> result;
         if (dtos.size() >= limit) {
             result = new ArrayList<>(dtos.subList(0, limit));
         } else {
-            // If collaborative filtering produced fewer dishes than needed, fill up
-            // the remainder using the user's preferred categories.
-            Set<Long> usedIds = new java.util.HashSet<>();
-            for (DishResponseDto dto : dtos) {
-                usedIds.add(dto.getId());
-            }
+            Set<Long> usedIds = dtos.stream().map(DishResponseDto::getId).collect(Collectors.toSet());
             usedIds.addAll(targetRatings.keySet());
             List<DishResponseDto> fallback = categoryFallback.recommend(userId, usedIds, limit - dtos.size());
             log.debug("Added {} dishes from category fallback", fallback.size());
             dtos.addAll(fallback);
-            result = dtos;
+            result = dtos.size() > limit ? new ArrayList<>(dtos.subList(0, limit)) : dtos;
         }
         log.debug("Returning {} recommendations", result.size());
         return result;
+    }
+
+    private static Map<Long, Double> normalizeZ(Map<Long, Double> scores) {
+        if (scores == null || scores.isEmpty()) return new HashMap<>();
+        double mean = scores.values().stream().mapToDouble(d -> d).average().orElse(0.0);
+        double var = scores.values().stream().mapToDouble(v -> (v - mean) * (v - mean)).average().orElse(0.0);
+        double std = Math.sqrt(var);
+        if (std < 1e-6) std = 1.0;
+        Map<Long, Double> out = new HashMap<>(scores.size());
+        for (Map.Entry<Long, Double> e : scores.entrySet()) {
+            out.put(e.getKey(), (e.getValue() - mean) / std);
+        }
+        return out;
+    }
+
+    private static Map<Long, Double> blend(Map<Long, Double> a, Map<Long, Double> b, double alpha) {
+        Map<Long, Double> out = new HashMap<>();
+        Set<Long> keys = new HashSet<>(a.keySet());
+        keys.addAll(b.keySet());
+        for (Long id : keys) {
+            double av = a.getOrDefault(id, 0.0);
+            double bv = b.getOrDefault(id, 0.0);
+            out.put(id, alpha * av + (1.0 - alpha) * bv);
+        }
+        return out;
     }
 
     private void assignAverageRatings(List<DishResponseDto> dtos) {
