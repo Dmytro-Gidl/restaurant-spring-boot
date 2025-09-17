@@ -63,9 +63,14 @@ public class IngredientForecastService {
         persistForecasts(aggMap.values());
         List<IngredientForecastDto> list = new ArrayList<>(aggMap.values());
         list.sort(Comparator.comparing(IngredientForecastDto::getName));
-        int start = (int) pageable.getOffset();
+        if (pageable == null || pageable.isUnpaged()) {
+            log.debug("Returning {} ingredient forecasts without pagination", list.size());
+            return new PageImpl<>(list);
+        }
+
+        int start = (int) Math.min(pageable.getOffset(), list.size());
         int end = Math.min(start + pageable.getPageSize(), list.size());
-        List<IngredientForecastDto> content = start > end ? Collections.emptyList() : list.subList(start, end);
+        List<IngredientForecastDto> content = list.subList(start, end);
         log.debug("Returning {} ingredient forecasts", content.size());
         return new PageImpl<>(content, pageable, list.size());
     }

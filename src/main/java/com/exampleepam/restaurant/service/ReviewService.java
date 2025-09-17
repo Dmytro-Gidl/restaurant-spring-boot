@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import com.exampleepam.restaurant.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
@@ -65,6 +66,7 @@ public class ReviewService {
     /**
      * Save a single review for a dish by a user.
      */
+    @CacheEvict(cacheNames = "menu", allEntries = true)
     public void saveReview(ReviewDto reviewDto, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -79,6 +81,7 @@ public class ReviewService {
     /**
      * Submit multiple reviews for an order.
      */
+    @CacheEvict(cacheNames = "menu", allEntries = true)
     public void submitReviews(Long orderId, Long userId, List<ReviewDto> reviews) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
@@ -144,6 +147,7 @@ public class ReviewService {
     /**
      * Delete a review by its id.
      */
+    @CacheEvict(cacheNames = "menu", allEntries = true)
     public void deleteReview(Long reviewId) {
         reviewRepository.deleteById(reviewId);
     }
