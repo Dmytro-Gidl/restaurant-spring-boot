@@ -232,8 +232,8 @@ public class OrderService {
         order.setUpdateDateTime(LocalDateTime.now());
         if (nextStatus == Status.COMPLETED) {
             for (ForecastModel m : models) {
-                dishForecastService.getDishForecasts(7, null, null, m.getName(), Pageable.unpaged());
-                ingredientForecastService.getIngredientForecasts(7, null, null, m.getName(), Pageable.unpaged());
+                dishForecastService.getDishForecasts(7, null, null, m.getName(), Pageable.unpaged(), true);
+                ingredientForecastService.getIngredientForecasts(7, null, null, m.getName(), Pageable.unpaged(), true);
             }
         }
     }
