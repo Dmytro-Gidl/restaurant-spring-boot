@@ -77,6 +77,12 @@ public class DishForecastService {
     @Transactional
     public Page<DishForecastDto> getDishForecasts(int historyDays, String filter, Category type,
                                                   String modelName, Pageable pageable) {
+        return getDishForecasts(historyDays, filter, type, modelName, pageable, false);
+    }
+
+    @Transactional
+    public Page<DishForecastDto> getDishForecasts(int historyDays, String filter, Category type,
+                                                  String modelName, Pageable pageable, boolean persist) {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.minusYears(2).atStartOfDay();
 
@@ -100,7 +106,7 @@ public class DishForecastService {
         List<DishForecastDto> result = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
         for (Dish dish : dishes.getContent()) {
-            result.add(buildForecastForDish(dish, history, today, now, historyDays, modelName));
+            result.add(buildForecastForDish(dish, history, today, now, historyDays, modelName, persist));
         }
 
         return new PageImpl<>(result, pageable, dishes.getTotalElements());
@@ -125,14 +131,14 @@ public class DishForecastService {
      * values down to days and hours.
      */
     private DishForecastDto buildForecastForDish(Dish dish, HistoryCollector.History history, LocalDate today,
-                                                LocalDateTime now, int historyDays, String modelName) {
+                                                LocalDateTime now, int historyDays, String modelName, boolean persist) {
         long id = dish.getId();
 
         Map<String, List<String>> labelsMap = new HashMap<>();
         Map<String, List<Integer>> actualMap = new HashMap<>();
         Map<String, List<Integer>> forecastMap = new HashMap<>();
 
-        MonthlyResult monthResult = monthlyForecaster.forecast(dish, history, models.get(modelName));
+        MonthlyResult monthResult = monthlyForecaster.forecast(dish, history, models.get(modelName), persist);
         if (monthResult.noData()) {
             log.warn("Dish {} has no completed order history", id);
         }

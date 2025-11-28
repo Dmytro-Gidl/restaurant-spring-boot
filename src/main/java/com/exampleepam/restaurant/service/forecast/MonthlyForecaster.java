@@ -27,7 +27,8 @@ public class MonthlyForecaster {
 
     public MonthlyResult forecast(Dish dish,
                                   HistoryCollector.History history,
-                                  ForecastModel model) {
+                                  ForecastModel model,
+                                  boolean persist) {
         long id = dish.getId();
         Map<YearMonth, Integer> dishMonthly = history.monthlyTotals.getOrDefault(id, Map.of());
         boolean noData = dishMonthly.isEmpty();
@@ -74,16 +75,21 @@ public class MonthlyForecaster {
         Map<YearMonth, Integer> monthForecastMap = new HashMap<>();
         List<String> displayLabels = new ArrayList<>(baseLabels);
         List<Integer> displayActual = new ArrayList<>(baseActual);
+        if (persist) {
+            forecastRepository.deleteByDishAndGeneratedAt(dish, java.time.LocalDate.now());
+        }
         for (int i = 0; i < result.getForecasts().size(); i++) {
             YearMonth ym = currentMonth.plusMonths(i + 1);
             int pred = (int) Math.round(result.getForecasts().get(i));
             monthForecastMap.put(ym, pred);
-            DishForecast df = new DishForecast();
-            df.setDish(dish);
-            df.setDate(ym.atDay(1));
-            df.setQuantity(pred);
-            df.setGeneratedAt(java.time.LocalDate.now());
-            forecastRepository.save(df);
+            if (persist) {
+                DishForecast df = new DishForecast();
+                df.setDish(dish);
+                df.setDate(ym.atDay(1));
+                df.setQuantity(pred);
+                df.setGeneratedAt(java.time.LocalDate.now());
+                forecastRepository.save(df);
+            }
             displayLabels.add(ym.toString());
             displayActual.add(null);
             forecast.add(pred);
