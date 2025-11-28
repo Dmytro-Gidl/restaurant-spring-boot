@@ -52,24 +52,35 @@ public class ArimaModel implements ForecastModel {
             );
         }
 
-        // OLS phi from y_t = phi * y_{t-1}
+        // OLS with intercept for y_t = c + phi * y_{t-1}
+        double sumX = 0.0, sumY = 0.0;
+        for (int t = 1; t < n; t++) {
+            sumX += history.get(t - 1);
+            sumY += history.get(t);
+        }
+        int obs = n - 1;
+        double meanX = sumX / obs;
+        double meanY = sumY / obs;
+
         double num = 0.0, den = 0.0;
         for (int t = 1; t < n; t++) {
-            double yt = history.get(t);
-            double yt1 = history.get(t - 1);
-            num += yt * yt1;
-            den += yt1 * yt1;
+            double x = history.get(t - 1) - meanX;
+            double y = history.get(t) - meanY;
+            num += x * y;
+            den += x * x;
         }
         double phi = (den == 0.0) ? 0.0 : (num / den);
         if (phi > PHI_CLAMP) phi = PHI_CLAMP;
         if (phi < -PHI_CLAMP) phi = -PHI_CLAMP;
+
+        double intercept = meanY - phi * meanX;
 
         // Fit/diagnostics on t=1..n-1
         List<Double> fitted = new ArrayList<>(n - 1);
         List<Double> actual = new ArrayList<>(n - 1);
         double sse = 0.0;
         for (int t = 1; t < n; t++) {
-            double fit = phi * history.get(t - 1);
+            double fit = intercept + phi * history.get(t - 1);
             double act = history.get(t);
             fitted.add(fit);
             actual.add(act);
@@ -90,7 +101,7 @@ public class ArimaModel implements ForecastModel {
         double last = history.get(n - 1);
         double denom = 1.0 - (phi * phi);
         for (int h = 1; h <= periods; h++) {
-            last = phi * last;
+            last = intercept + phi * last;
             forecasts.add(last);
 
             double varH;
@@ -106,7 +117,7 @@ public class ArimaModel implements ForecastModel {
             upper.add(last + Z95 * se);
         }
 
-        log.debug("ARIMA phi={} rmse={} mape={}", phi, rmse, mape);
-        return new ForecastResult(forecasts, phi, 0, 0, mape, rmse, lower, upper);
+        log.debug("ARIMA phi={} intercept={} rmse={} mape={}", phi, intercept, rmse, mape);
+        return new ForecastResult(forecasts, phi, 0, intercept, mape, rmse, lower, upper);
     }
 }
