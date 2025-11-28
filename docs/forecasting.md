@@ -45,8 +45,13 @@ Example comparison on the steady-growth scenario (`5,10,15,20`) produced the fol
 - Holt–Winters assumes a linear trend without strong seasonality; the automatic ARIMA model provides a mean or AR(1) alternative.
 - Forecasts are rounded to whole units because fractional dishes cannot be prepared.
 
-### Forecast refresh
-- Forecasts are recomputed nightly by a scheduler and immediately after an order is marked `COMPLETED`.
+### Forecast refresh and storage
+- Forecasts are recomputed nightly by a scheduler, immediately after an order is marked `COMPLETED`, and once at application
+  startup so the admin pages have data even on the first load.
+- UI page views keep the database untouched: the controllers build DTOs with `persist=false`, so refreshing the page does not
+  insert duplicate rows.
+- When persistence is enabled (scheduler or order completion), the services first delete any rows generated today for the same
+  dish/ingredient and then save the new monthly forecasts, preventing repeated page hits from inflating the tables.
 - All registered models are run so that administrators can compare accuracy.
 
 ### Troubleshooting
