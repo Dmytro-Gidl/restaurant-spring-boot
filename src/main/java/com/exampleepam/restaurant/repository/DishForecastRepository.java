@@ -12,5 +12,6 @@ import java.util.List;
 public interface DishForecastRepository extends JpaRepository<DishForecast, Long> {
     List<DishForecast> findByDishAndDateAfter(Dish dish, LocalDate date);
     void deleteByGeneratedAtBefore(LocalDate date);
+    void deleteByDishAndGeneratedAt(Dish dish, LocalDate generatedAt);
 }
 

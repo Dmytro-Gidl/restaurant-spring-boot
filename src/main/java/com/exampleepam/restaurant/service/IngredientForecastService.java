@@ -54,13 +54,21 @@ public class IngredientForecastService {
     @Transactional
     public Page<IngredientForecastDto> getIngredientForecasts(int historyDays, String filter, Category type,
                                                              String modelName, Pageable pageable) {
+        return getIngredientForecasts(historyDays, filter, type, modelName, pageable, false);
+    }
+
+    @Transactional
+    public Page<IngredientForecastDto> getIngredientForecasts(int historyDays, String filter, Category type,
+                                                             String modelName, Pageable pageable, boolean persist) {
         Map<Long, Dish> dishMap = dishRepository.findAll().stream()
                 .collect(Collectors.toMap(Dish::getId, d -> d));
-        Page<DishForecastDto> dishForecasts = fetchDishForecasts(historyDays, type, modelName);
+        Page<DishForecastDto> dishForecasts = fetchDishForecasts(historyDays, type, modelName, persist);
         log.debug("Fetched {} dish forecasts for ingredients", dishForecasts.getContent().size());
         Map<Long, IngredientForecastDto> aggMap = aggregateIngredientData(dishForecasts, dishMap, filter);
         log.debug("Aggregated to {} ingredient entries", aggMap.size());
-        persistForecasts(aggMap.values());
+        if (persist) {
+            persistForecasts(aggMap.values());
+        }
         List<IngredientForecastDto> list = new ArrayList<>(aggMap.values());
         list.sort(Comparator.comparing(IngredientForecastDto::getName));
         if (pageable == null || pageable.isUnpaged()) {
@@ -75,8 +83,8 @@ public class IngredientForecastService {
         return new PageImpl<>(content, pageable, list.size());
     }
 
-    private Page<DishForecastDto> fetchDishForecasts(int historyDays, Category type, String modelName) {
-        return dishForecastService.getDishForecasts(historyDays, null, type, modelName, Pageable.unpaged());
+    private Page<DishForecastDto> fetchDishForecasts(int historyDays, Category type, String modelName, boolean persist) {
+        return dishForecastService.getDishForecasts(historyDays, null, type, modelName, Pageable.unpaged(), persist);
     }
 
     /**
@@ -145,6 +153,7 @@ public class IngredientForecastService {
         for (IngredientForecastDto dto : dtos) {
             Ingredient ingredient = ingredientRepository.findById(dto.getId()).orElse(null);
             if (ingredient == null) continue;
+            forecastRepository.deleteByIngredientAndGeneratedAt(ingredient, java.time.LocalDate.now());
             List<Integer> monthly = dto.getForecastData().get("monthly");
             List<String> labels = dto.getLabels().get("monthly");
             if (monthly == null || labels == null) continue;
