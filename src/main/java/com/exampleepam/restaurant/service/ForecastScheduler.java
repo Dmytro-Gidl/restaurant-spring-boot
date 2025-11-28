@@ -1,6 +1,8 @@
 package com.exampleepam.restaurant.service;
 
 import com.exampleepam.restaurant.entity.Category;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.exampleepam.restaurant.service.forecast.ForecastModel;
@@ -18,6 +20,12 @@ public class ForecastScheduler {
         this.dishForecastService = dishForecastService;
         this.ingredientForecastService = ingredientForecastService;
         this.models = models;
+    }
+
+    /** Trigger an initial refresh right after the application is ready so the UI has data. */
+    @EventListener(ApplicationReadyEvent.class)
+    public void initializeForecasts() {
+        refreshForecasts();
     }
 
     /** Refresh forecasts once per day. */
