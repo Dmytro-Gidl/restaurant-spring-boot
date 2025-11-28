@@ -5,7 +5,7 @@ We rely on a small, transparent pipeline to look a few weeks ahead at dish deman
 The application supports three lightweight models:
 
 - **Holt‑Winters (default):** smooths gradual trends and is used when no model is specified.
-- **ARIMA(1,0,0):** reacts to month‑to‑month swings around a stable mean.
+- **ARIMA(1,0,0):** reacts to month‑to‑month swings around a stable mean. The implementation fits both an intercept and AR(1) coefficient, clamps |ϕ|<1 for stability, and propagates confidence intervals from the estimated innovation variance.
 - **auto‑ARIMA:** automatically chooses between a simple mean and an AR(1) based on the data.
 
 If trimming leaves only a single non‑zero month, all three models simply repeat that value until more history exists.
