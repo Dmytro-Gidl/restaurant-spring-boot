@@ -24,8 +24,8 @@ public class ForecastScheduler {
     @Scheduled(cron = "0 0 2 * * *")
     public void refreshForecasts() {
         for (ForecastModel m : models) {
-            dishForecastService.getDishForecasts(7, null, null, m.getName(), org.springframework.data.domain.Pageable.unpaged());
-            ingredientForecastService.getIngredientForecasts(7, null, null, m.getName(), org.springframework.data.domain.Pageable.unpaged());
+            dishForecastService.getDishForecasts(7, null, null, m.getName(), org.springframework.data.domain.Pageable.unpaged(), true);
+            ingredientForecastService.getIngredientForecasts(7, null, null, m.getName(), org.springframework.data.domain.Pageable.unpaged(), true);
         }
     }
 }
