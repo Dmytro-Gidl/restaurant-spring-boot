@@ -22,4 +22,5 @@ public class DishForecastDto {
     private Map<String, List<Integer>> forecastData;
     private boolean singlePoint;
     private boolean noData;
+    private boolean emptyForecast;
 }

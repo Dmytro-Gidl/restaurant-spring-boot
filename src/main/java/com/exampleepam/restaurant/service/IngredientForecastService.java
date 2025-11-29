@@ -110,7 +110,7 @@ public class IngredientForecastService {
                 IngredientForecastDto dto = aggMap.computeIfAbsent(
                         di.getIngredient().getId(),
                         id -> new IngredientForecastDto(id, ingName, unit,
-                                new HashMap<>(), new HashMap<>(), new HashMap<>(), false, false));
+                                new HashMap<>(), new HashMap<>(), new HashMap<>(), false, false, false));
                 for (String scale : df.getLabels().keySet()) {
                     dto.getLabels().putIfAbsent(scale, new ArrayList<>(df.getLabels().get(scale)));
                     List<Integer> aList = df.getActualData().get(scale);
@@ -134,6 +134,7 @@ public class IngredientForecastService {
                             fAgg.set(i, (curF == null ? 0 : curF) + fVal * di.getQuantity());
                         }
                     }
+                    dto.setEmptyForecast(dto.isEmptyForecast() || df.isEmptyForecast());
                 }
             }
         }
