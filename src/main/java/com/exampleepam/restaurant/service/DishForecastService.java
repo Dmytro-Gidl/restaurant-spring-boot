@@ -50,6 +50,7 @@ public class DishForecastService {
     private final Map<String, ForecastEvaluator.Metrics> modelMetrics = new HashMap<>();
     private final Map<String, Map<Long, Boolean>> singlePointFlags = new HashMap<>();
     private final Map<String, Map<Long, Boolean>> noDataFlags = new HashMap<>();
+    private final Map<String, Map<Long, Boolean>> emptyForecastFlags = new HashMap<>();
 
     @Autowired
     public DishForecastService(DishRepository dishRepository,
@@ -146,6 +147,7 @@ public class DishForecastService {
         latestHistory.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, monthResult.modelHistory());
         singlePointFlags.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, monthResult.singlePoint());
         noDataFlags.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, monthResult.noData());
+        emptyForecastFlags.computeIfAbsent(modelName, k -> new HashMap<>()).put(id, monthResult.emptyForecast());
         labelsMap.put("monthly", monthResult.scale().labels());
         actualMap.put("monthly", monthResult.scale().actual());
         forecastMap.put("monthly", monthResult.scale().forecast());
@@ -161,7 +163,7 @@ public class DishForecastService {
         forecastMap.put("hourly", hourly.forecast());
 
         return new DishForecastDto(id, dish.getName(), dish.getimagePath(), labelsMap, actualMap, forecastMap,
-                monthResult.singlePoint(), monthResult.noData());
+                monthResult.singlePoint(), monthResult.noData(), monthResult.emptyForecast());
     }
 
     public ForecastDetails getDetails(String modelName, long dishId) {
@@ -169,11 +171,14 @@ public class DishForecastService {
         Map<Long, ForecastResult> r = latestResults.getOrDefault(modelName, Map.of());
         Map<Long, Boolean> sp = singlePointFlags.getOrDefault(modelName, Map.of());
         Map<Long, Boolean> nd = noDataFlags.getOrDefault(modelName, Map.of());
+        Map<Long, Boolean> ef = emptyForecastFlags.getOrDefault(modelName, Map.of());
         return new ForecastDetails(h.getOrDefault(dishId, List.of()),
-                r.get(dishId), sp.getOrDefault(dishId, false), nd.getOrDefault(dishId, false));
+                r.get(dishId), sp.getOrDefault(dishId, false), nd.getOrDefault(dishId, false),
+                ef.getOrDefault(dishId, false));
     }
 
-    public record ForecastDetails(List<Integer> history, ForecastResult result, boolean singlePoint, boolean noData) {}
+    public record ForecastDetails(List<Integer> history, ForecastResult result, boolean singlePoint, boolean noData,
+                                  boolean emptyForecast) {}
 
     public Map<String, ForecastEvaluator.Metrics> getModelMetrics() {
         return modelMetrics;

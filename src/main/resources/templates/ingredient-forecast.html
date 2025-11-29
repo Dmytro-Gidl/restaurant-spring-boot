@@ -69,6 +69,7 @@
                     </div>
                     <p class="text-warning small mt-2" th:if="${f.noData}">No completed orders yet; forecasts start after some history is recorded.</p>
                     <p class="text-warning small mt-2" th:if="${!f.noData && f.singlePoint}">Only one month has completed orders; all models repeat this value.</p>
+                    <p class="text-warning small mt-2" th:if="${!f.noData && f.emptyForecast}">The selected model returned no predictions for this ingredient; chart is left empty.</p>
                     <details class="text-light mt-2">
                         <summary>Details</summary>
                         <div class="small" th:attr="id=${'details-' + f.id}"></div>
