@@ -85,7 +85,7 @@ public class DishForecastService {
     public Page<DishForecastDto> getDishForecasts(int historyDays, String filter, Category type,
                                                   String modelName, Pageable pageable, boolean persist) {
         LocalDate today = LocalDate.now();
-        LocalDateTime start = today.minusYears(2).atStartOfDay();
+        LocalDateTime start = today.minusYears(3).atStartOfDay();
 
         // 1. Load order history and aggregate to hourly/daily/monthly totals.
         HistoryCollector.History history = historyCollector.collect(start);
