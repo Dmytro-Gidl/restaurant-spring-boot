@@ -32,7 +32,8 @@ public class DailyForecaster {
         Map<YearMonth, Integer> remainingMonthly = new HashMap<>();
         Map<YearMonth, Integer> allocatedDays = new HashMap<>();
         LocalDate futureDay = today.plusDays(1);
-        for (int i = 1; i <= 30; i++) {
+        LocalDate horizonEnd = YearMonth.from(today.plusMonths(1)).atEndOfMonth();
+        while (!futureDay.isAfter(horizonEnd)) {
             YearMonth ym = YearMonth.from(futureDay);
             int monthPred = monthForecastMap.getOrDefault(ym, 0);
             remainingMonthly.computeIfAbsent(ym, m -> {
@@ -71,12 +72,13 @@ public class DailyForecaster {
             sums.merge(ym, val, Integer::sum);
         }
         for (Map.Entry<YearMonth, Integer> e : monthForecastMap.entrySet()) {
-            int diff = e.getValue() - sums.getOrDefault(e.getKey(),0);
-            if (diff==0) continue;
-            for (int i = labels.size()-1; i>=0; i--) {
-                if (forecast.get(i)==null) continue;
-                YearMonth ym = YearMonth.parse(labels.get(i).substring(0,7));
-                if (ym.equals(e.getKey())) { forecast.set(i, forecast.get(i)+diff); break; }
+            if (!sums.containsKey(e.getKey())) continue; // skip months outside the horizon
+            int diff = e.getValue() - sums.getOrDefault(e.getKey(), 0);
+            if (diff == 0) continue;
+            for (int i = labels.size() - 1; i >= 0; i--) {
+                if (forecast.get(i) == null) continue;
+                YearMonth ym = YearMonth.parse(labels.get(i).substring(0, 7));
+                if (ym.equals(e.getKey())) { forecast.set(i, forecast.get(i) + diff); break; }
             }
         }
     }
