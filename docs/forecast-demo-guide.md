@@ -4,7 +4,7 @@ This guide walks professors through a reproducible end-to-end demo using the sam
 
 ## How to load the data
 1. Start the app connected to a throwaway database (e.g., `spring.profiles.active=dev`).
-2. Apply the SQL in `docs/forecast-demo.sql` (e.g., via `psql`, `mysql`, or your IDE's console). It truncates core tables **and cached forecast rows** so you start clean, then seeds three dishes and users, and inserts **27 months (Jan 2024–Mar 2026)** of order history so Holt/ARIMA have a full seasonal cycle to train on.
+2. Apply the SQL in `docs/forecast-demo.sql` (e.g., via `psql`, `mysql`, or your IDE's console). It truncates core tables **and cached forecast rows** so you start clean, then seeds three dishes and users, and inserts **27 months (Jan 2024–Mar 2026)** of order history so Holt/ARIMA have a full seasonal cycle to train on. The app now keeps a **36‑month window** of history in memory, ensuring two complete years stay in view for the Holt seasonal period.
 3. Visit **Admin ▸ Demand forecast** (`/admin/dish-forecast`) to view metrics, and **Dishes** to see the recommender surface personalized picks when logged in as Student A/B.
 
 ## What to demonstrate

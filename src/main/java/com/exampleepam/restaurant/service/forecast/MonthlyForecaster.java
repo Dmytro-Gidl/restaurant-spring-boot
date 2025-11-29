@@ -19,6 +19,7 @@ public class MonthlyForecaster {
 
     private final DishForecastRepository forecastRepository;
     private static final Logger log = LoggerFactory.getLogger(MonthlyForecaster.class);
+    private static final int MONTH_WINDOW = 36;
 
     @Autowired
     public MonthlyForecaster(DishForecastRepository forecastRepository) {
@@ -36,12 +37,12 @@ public class MonthlyForecaster {
             log.warn("Dish {} has no completed orders in history", id);
         }
         YearMonth currentMonth = YearMonth.now();
-        YearMonth startMonth = currentMonth.minusMonths(24);
+        YearMonth startMonth = currentMonth.minusMonths(MONTH_WINDOW);
 
         List<String> baseLabels = new ArrayList<>();
         List<Integer> baseActual = new ArrayList<>();
         List<Integer> forecast = new ArrayList<>();
-        for (int i = 0; i < 24; i++) {
+        for (int i = 0; i < MONTH_WINDOW; i++) {
             YearMonth ym = startMonth.plusMonths(i);
             int val = dishMonthly.getOrDefault(ym, 0);
             baseLabels.add(ym.toString());

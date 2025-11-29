@@ -22,6 +22,7 @@ public class HistoryCollector {
 
     private final OrderRepository orderRepository;
     private static final Logger log = LoggerFactory.getLogger(HistoryCollector.class);
+    private static final int MONTH_WINDOW = 36;
 
     @Autowired
     public HistoryCollector(OrderRepository orderRepository) {
@@ -73,9 +74,9 @@ public class HistoryCollector {
 
         public List<Integer> globalMonthlyTotals() {
             YearMonth current = YearMonth.now();
-            YearMonth start = current.minusMonths(24);
+            YearMonth start = current.minusMonths(MONTH_WINDOW);
             List<Integer> list = new ArrayList<>();
-            for (int i = 0; i <= 24; i++) {
+            for (int i = 0; i <= MONTH_WINDOW; i++) {
                 YearMonth ym = start.plusMonths(i);
                 list.add(globalMonthly.getOrDefault(ym, 0));
             }
@@ -92,10 +93,10 @@ public class HistoryCollector {
          */
         public void exportMonthlyCsv(java.nio.file.Path path) throws java.io.IOException {
             YearMonth current = YearMonth.now();
-            YearMonth start = current.minusMonths(24);
+            YearMonth start = current.minusMonths(MONTH_WINDOW);
             try (java.io.BufferedWriter w = java.nio.file.Files.newBufferedWriter(path)) {
                 w.write("month,quantity\n");
-                for (int i = 0; i <= 24; i++) {
+                for (int i = 0; i <= MONTH_WINDOW; i++) {
                     YearMonth ym = start.plusMonths(i);
                     int qty = globalMonthly.getOrDefault(ym, 0);
                     w.write(ym + "," + qty + "\n");
