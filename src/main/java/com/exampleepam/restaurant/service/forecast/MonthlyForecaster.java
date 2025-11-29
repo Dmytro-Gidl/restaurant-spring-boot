@@ -60,7 +60,15 @@ public class MonthlyForecaster {
             modelHistory.remove(0);
             trimmed++;
         }
+        int trailing = 0;
+        while (modelHistory.size() > 1 && modelHistory.get(modelHistory.size() - 1) == 0) {
+            modelHistory.remove(modelHistory.size() - 1);
+            trailing++;
+        }
         log.debug("Dish {} trimmed {} leading zero months", id, trimmed);
+        if (trailing > 0) {
+            log.debug("Dish {} trimmed {} trailing zero months", id, trailing);
+        }
         if (modelHistory.isEmpty()) {
             log.warn("Dish {} model history empty after trimming; using current month value", id);
             modelHistory.add(currentVal);
