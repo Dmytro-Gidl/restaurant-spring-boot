@@ -11,4 +11,5 @@ public record MonthlyResult(ScaleData scale,
                             List<Integer> modelHistory,
                             ForecastResult result,
                             boolean singlePoint,
-                            boolean noData) {}
+                            boolean noData,
+                            boolean emptyForecast) {}
