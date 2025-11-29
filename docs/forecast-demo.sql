@@ -38,7 +38,7 @@ INSERT INTO dish_ingredient (id, dish_id, ingredient_id, quantity) VALUES
   (202, 101, 12, 200),
   (203, 102, 13, 120);
 
--- 4) Monthly histories (Jan 2024–Mar 2025) for three contrasting patterns to give models more folds.
+-- 4) Monthly histories (Jan 2024–Mar 2026) for three contrasting patterns to give models more folds.
 -- Trend Taco: linear rise exposes Holt-Winters trend handling.
 INSERT INTO orders (id, address, creation_date_time, update_date_time, total_price, status, user_id, reviewed) VALUES
   (1000, 'demo', '2024-01-12 12:00:00', '2024-01-12 12:00:00', 0, 'COMPLETED', 1, true),
@@ -55,7 +55,19 @@ INSERT INTO orders (id, address, creation_date_time, update_date_time, total_pri
   (1011, 'demo', '2024-12-12 12:00:00', '2024-12-12 12:00:00', 0, 'COMPLETED', 1, true),
   (1012, 'demo', '2025-01-12 12:00:00', '2025-01-12 12:00:00', 0, 'COMPLETED', 1, true),
   (1013, 'demo', '2025-02-12 12:00:00', '2025-02-12 12:00:00', 0, 'COMPLETED', 1, true),
-  (1014, 'demo', '2025-03-12 12:00:00', '2025-03-12 12:00:00', 0, 'COMPLETED', 1, true);
+  (1014, 'demo', '2025-03-12 12:00:00', '2025-03-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1015, 'demo', '2025-04-12 12:00:00', '2025-04-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1016, 'demo', '2025-05-12 12:00:00', '2025-05-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1017, 'demo', '2025-06-12 12:00:00', '2025-06-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1018, 'demo', '2025-07-12 12:00:00', '2025-07-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1019, 'demo', '2025-08-12 12:00:00', '2025-08-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1020, 'demo', '2025-09-12 12:00:00', '2025-09-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1021, 'demo', '2025-10-12 12:00:00', '2025-10-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1022, 'demo', '2025-11-12 12:00:00', '2025-11-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1023, 'demo', '2025-12-12 12:00:00', '2025-12-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1024, 'demo', '2026-01-12 12:00:00', '2026-01-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1025, 'demo', '2026-02-12 12:00:00', '2026-02-12 12:00:00', 0, 'COMPLETED', 1, true),
+  (1026, 'demo', '2026-03-12 12:00:00', '2026-03-12 12:00:00', 0, 'COMPLETED', 1, true);
 INSERT INTO order_item (id, dish_id, quantity, order_id) VALUES
   (3000, 100, 8, 1000),
   (3001, 100, 12, 1001),
@@ -71,7 +83,19 @@ INSERT INTO order_item (id, dish_id, quantity, order_id) VALUES
   (3011, 100, 52, 1011),
   (3012, 100, 56, 1012),
   (3013, 100, 60, 1013),
-  (3014, 100, 64, 1014);
+  (3014, 100, 64, 1014),
+  (3015, 100, 68, 1015),
+  (3016, 100, 72, 1016),
+  (3017, 100, 76, 1017),
+  (3018, 100, 80, 1018),
+  (3019, 100, 84, 1019),
+  (3020, 100, 88, 1020),
+  (3021, 100, 92, 1021),
+  (3022, 100, 96, 1022),
+  (3023, 100, 100, 1023),
+  (3024, 100, 104, 1024),
+  (3025, 100, 108, 1025),
+  (3026, 100, 112, 1026);
 
 -- Zigzag Soup: alternating high/low months highlight ARIMA oscillation capture.
 INSERT INTO orders (id, address, creation_date_time, update_date_time, total_price, status, user_id, reviewed) VALUES
@@ -89,7 +113,19 @@ INSERT INTO orders (id, address, creation_date_time, update_date_time, total_pri
   (1111, 'demo', '2024-12-05 12:00:00', '2024-12-05 12:00:00', 0, 'COMPLETED', 1, true),
   (1112, 'demo', '2025-01-05 12:00:00', '2025-01-05 12:00:00', 0, 'COMPLETED', 1, true),
   (1113, 'demo', '2025-02-05 12:00:00', '2025-02-05 12:00:00', 0, 'COMPLETED', 1, true),
-  (1114, 'demo', '2025-03-05 12:00:00', '2025-03-05 12:00:00', 0, 'COMPLETED', 1, true);
+  (1114, 'demo', '2025-03-05 12:00:00', '2025-03-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1115, 'demo', '2025-04-05 12:00:00', '2025-04-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1116, 'demo', '2025-05-05 12:00:00', '2025-05-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1117, 'demo', '2025-06-05 12:00:00', '2025-06-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1118, 'demo', '2025-07-05 12:00:00', '2025-07-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1119, 'demo', '2025-08-05 12:00:00', '2025-08-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1120, 'demo', '2025-09-05 12:00:00', '2025-09-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1121, 'demo', '2025-10-05 12:00:00', '2025-10-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1122, 'demo', '2025-11-05 12:00:00', '2025-11-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1123, 'demo', '2025-12-05 12:00:00', '2025-12-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1124, 'demo', '2026-01-05 12:00:00', '2026-01-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1125, 'demo', '2026-02-05 12:00:00', '2026-02-05 12:00:00', 0, 'COMPLETED', 1, true),
+  (1126, 'demo', '2026-03-05 12:00:00', '2026-03-05 12:00:00', 0, 'COMPLETED', 1, true);
 INSERT INTO order_item (id, dish_id, quantity, order_id) VALUES
   (3100, 101, 38, 1100),
   (3101, 101, 12, 1101),
@@ -105,7 +141,19 @@ INSERT INTO order_item (id, dish_id, quantity, order_id) VALUES
   (3111, 101, 22, 1111),
   (3112, 101, 26, 1112),
   (3113, 101, 24, 1113),
-  (3114, 101, 26, 1114);
+  (3114, 101, 26, 1114),
+  (3115, 101, 32, 1115),
+  (3116, 101, 14, 1116),
+  (3117, 101, 30, 1117),
+  (3118, 101, 16, 1118),
+  (3119, 101, 28, 1119),
+  (3120, 101, 18, 1120),
+  (3121, 101, 26, 1121),
+  (3122, 101, 20, 1122),
+  (3123, 101, 24, 1123),
+  (3124, 101, 22, 1124),
+  (3125, 101, 26, 1125),
+  (3126, 101, 24, 1126);
 
 -- Sparse Salad: too little data to compute MAPE/RMSE, ideal for showing "N/A" handling.
 INSERT INTO orders (id, address, creation_date_time, update_date_time, total_price, status, user_id, reviewed) VALUES
