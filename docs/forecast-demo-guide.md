@@ -9,6 +9,11 @@ This guide walks professors through a reproducible end-to-end demo using the sam
 
 ## What to demonstrate
 
+### Daily and hourly validity checks
+* Daily forecasts reuse the current and next month’s predictions, spreading them across days between today and the end of next month. If the month-level numbers are zero, the daily line will also be flat; ensure the monthly model shows signal first.
+* Hourly charts allocate each day’s total using the last **7 days** of observed hourly patterns. Without at least a week of varied timestamps, the allocator falls back to an even 1/24 split per hour and the curve appears flat.
+* The MAPE and RMSE badges on the admin page come from cross-validating each model against the **global monthly aggregate**, not individual dishes, so treat them as portfolio-level indicators rather than per-dish guarantees.
+
 ### Trend Taco (dish 100)
 *History:* Quantities climb linearly from 8 to 112 over twenty-seven months.
 
