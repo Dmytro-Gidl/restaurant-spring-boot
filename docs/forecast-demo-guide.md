@@ -4,8 +4,7 @@ This guide walks professors through a reproducible end-to-end demo using the sam
 
 ## How to load the data
 1. Start the app connected to a throwaway database (e.g., `spring.profiles.active=dev`).
-2. Apply the SQL in `docs/forecast-demo.sql` (e.g., via `psql`, `mysql`, or your IDE's console). It truncates core tables **and cached forecast rows** so you start clean, then seeds three dishes and users, and inserts **27 months (Jan 2024–Mar 2026)** of order history so Holt/ARIMA have a full seasonal cycle to train on. The app now keeps a **36‑month window** of history in memory and collects the last **three years** of completed orders, ensuring two complete years stay in view for the Holt seasonal period. Holt's seasonal period is set to **6 months** for the demo so the limited in-window history still yields non-flat projections.
-3. Visit **Admin ▸ Demand forecast** (`/admin/dish-forecast`) to view metrics, and **Dishes** to see the recommender surface personalized picks when logged in as Student A/B.
+2. Apply the SQL in `docs/forecast-demo.sql` (e.g., via `psql`, `mysql`, or your IDE's console). It truncates core tables **and cached forecast rows** so you start clean, then seeds five dishes and users, and inserts **27 months (Jan 2024–Mar 2026)** of order history so Holt/ARIMA have a full seasonal cycle to train on. The app now keeps a **36‑month window** of history in memory and collects the last **three years** of completed orders, ensuring two complete years stay in view for the Holt seasonal period. Holt's seasonal period is set to **6 months** for the demo so the limited in-window history still yields non-flat projections.
 
 ## What to demonstrate
 
@@ -38,6 +37,24 @@ This guide walks professors through a reproducible end-to-end demo using the sam
 | Model | Expected behavior | What to point out |
 |-------|-------------------|-------------------|
 | All models | Forecasts repeat the last observed value (~10–11) and MAPE/RMSE still show as **N/A** because the history lacks enough folds even with an extra point. | This demonstrates the built-in guardrails for scarce data. |
+
+### Seasonal Shake (dish 103)
+*History:* Pronounced summer peaks every year (roughly 6 → 36 → 6), with a mild lift in the second and third years.
+
+| Model | Expected behavior | What to point out |
+|-------|-------------------|-------------------|
+| Holt–Winters | Tracks the repeating summer spike and off-season trough, projecting another upswing into the next summer. | Good seasonal fit thanks to the 6‑month period; show how smoothing keeps winter months low. |
+| ARIMA(1,0,0) | Underestimates the amplitude, trending toward the annual mean rather than the peaks. | Illustrates AR bias toward the average when seasonality dominates. |
+| auto-ARIMA | May pick a seasonal/AR configuration that partially captures the wave but remains flatter than Holt. | Contrast automatic selection with manual Holt for strong seasonality. |
+
+### Step Sandwich (dish 104)
+*History:* Flat around 14–16 through 2024, then jumps to the mid‑40s in Jan 2025 and trends toward the mid‑60s by Mar 2026.
+
+| Model | Expected behavior | What to point out |
+|-------|-------------------|-------------------|
+| Holt–Winters | Smooths the level shift and keeps climbing toward the new level. | Demonstrates Holt’s trend component reacting to a structural break. |
+| ARIMA(1,0,0) | Lags the step change for several months, easing upward from the old mean. | Showcases AR lag on regime shifts. |
+| auto-ARIMA | Typically picks AR(1) here; behaves like ARIMA but may adapt slightly faster depending on automatic order selection. | Use to explain why multiple models are kept for robustness across patterns. |
 
 ## Recommendation angle
 * Log in as Student A (`a@example.com`) and Student B (`b@example.com`). Student A’s 5★ review on Trend Taco and Student B’s 5★ on Zigzag Soup cause each student to see their favorite dish in the recommendation carousel. Because both students have interacted with different items, the matrix factorization step also surfaces the other’s favorite as a second suggestion, illustrating collaborative filtering.
