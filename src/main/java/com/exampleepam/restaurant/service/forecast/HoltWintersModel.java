@@ -70,20 +70,18 @@ public class HoltWintersModel implements ForecastModel {
 
         double bestRmse = Double.MAX_VALUE;
         double bestA = 0.2, bestB = 0.1, bestC = 0.1;
-        List<Double> bestForecast = null;
 
         for (double a = 0.1; a <= 1.0; a += 0.1) {
             for (double b = 0.1; b <= 1.0; b += 0.1) {
                 for (double g = 0.1; g <= 1.0; g += 0.1) {
-                    List<Double> fit = smooth(train, periods + period, a, b, g);
-                    List<Double> validation = fit.subList(periods, periods + period);
+                    List<Double> fit = smooth(train, period, a, b, g);
+                    List<Double> validation = fit.subList(train.size(), fit.size());
                     List<Double> testD = new ArrayList<>();
                     for (int v : test) testD.add((double) v);
                     double rmse = ForecastEvaluator.rmse(testD, validation);
                     if (rmse < bestRmse) {
                         bestRmse = rmse;
                         bestA = a; bestB = b; bestC = g;
-                        bestForecast = fit;
                     }
                 }
             }
@@ -92,12 +90,13 @@ public class HoltWintersModel implements ForecastModel {
         // compute accuracy on test slice
         List<Double> testD = new ArrayList<>();
         for (int v : test) testD.add((double) v);
-        List<Double> validation = bestForecast.subList(periods, periods + period);
+        List<Double> validation = smooth(train, period, bestA, bestB, bestC)
+                .subList(train.size(), train.size() + period);
         double mape = ForecastEvaluator.mape(testD, validation);
 
         // re-fit on the full history so the final forecast reflects the latest values
         List<Double> fullFit = smooth(history, periods, bestA, bestB, bestC);
-        List<Double> future = fullFit.subList(history.size(), fullFit.size());
+        List<Double> future = fullFit.subList(history.size(), history.size() + periods);
         double interval = 1.96 * bestRmse;
         List<Double> lower = new ArrayList<>();
         List<Double> upper = new ArrayList<>();
