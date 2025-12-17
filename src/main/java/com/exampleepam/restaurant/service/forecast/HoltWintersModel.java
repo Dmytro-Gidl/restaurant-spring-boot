@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -27,116 +26,134 @@ public class HoltWintersModel implements ForecastModel {
 
     @Override
     public ForecastResult forecast(List<Integer> history, int periods) {
-        if (history.isEmpty()) {
-            return new ForecastResult(Collections.emptyList(), 0d, 0d, 0d, 0d, 0d,
-                    Collections.emptyList(), Collections.emptyList());
+        if (history == null || history.isEmpty() || periods <= 0) {
+            return new ForecastResult(List.of(), 0d, 0d, 0d, 0d, 0d, List.of(), List.of());
         }
+
         int n = history.size();
-        if (n <= period) {
+        if (n < 2 * period) {
             double last = history.get(n - 1);
             List<Double> future = new ArrayList<>();
             for (int i = 0; i < periods; i++) {
                 future.add(last);
             }
-            return new ForecastResult(future, 0d, 0d, 0d, 0d, 0d,
-                    Collections.emptyList(), Collections.emptyList());
-        }
-        int split = Math.max(period * 2, period + 1);
-        split = Math.min(split, n);
-        if (split - period <= 0) {
-            double last = history.get(n - 1);
-            List<Double> future = new ArrayList<>();
-            for (int i = 0; i < periods; i++) {
-                future.add(last);
-            }
-            return new ForecastResult(future, 0d, 0d, 0d, 0d, 0d,
-                    Collections.emptyList(), Collections.emptyList());
-        }
-        List<Integer> train = history.subList(0, split - period);
-        List<Integer> test = history.subList(split - period, split);
-
-        // If the training slice is shorter than a full seasonal cycle, fall back to
-        // a naive forecast instead of attempting Holt-Winters smoothing which
-        // would access missing indices.
-        if (train.size() < period || train.size() < 2) {
-            double last = history.get(n - 1);
-            List<Double> future = new ArrayList<>();
-            for (int i = 0; i < periods; i++) {
-                future.add(last);
-            }
-            return new ForecastResult(future, 0d, 0d, 0d, 0d, 0d,
-                    Collections.emptyList(), Collections.emptyList());
+            return new ForecastResult(future, 0d, 0d, 0d, 0d, 0d, List.of(), List.of());
         }
 
-        double bestRmse = Double.MAX_VALUE;
-        double bestA = 0.2, bestB = 0.1, bestC = 0.1;
-        List<Double> bestForecast = null;
+        int holdout = period;
+        List<Integer> train = history.subList(0, n - holdout);
+        List<Integer> test = history.subList(n - holdout, n);
 
-        for (double a = 0.1; a <= 1.0; a += 0.1) {
-            for (double b = 0.1; b <= 1.0; b += 0.1) {
-                for (double g = 0.1; g <= 1.0; g += 0.1) {
-                    List<Double> fit = smooth(train, periods + period, a, b, g);
-                    List<Double> validation = fit.subList(periods, periods + period);
-                    List<Double> testD = new ArrayList<>();
-                    for (int v : test) testD.add((double) v);
-                    double rmse = ForecastEvaluator.rmse(testD, validation);
-                    if (rmse < bestRmse) {
-                        bestRmse = rmse;
-                        bestA = a; bestB = b; bestC = g;
-                        bestForecast = fit;
+        double bestRmse = Double.POSITIVE_INFINITY;
+        double bestA = 0.3, bestB = 0.1, bestC = 0.1;
+        boolean tuneable = train.size() >= 2 * period;
+
+        List<Double> testD = new ArrayList<>(holdout);
+        for (int v : test) testD.add((double) v);
+
+        if (tuneable) {
+            for (double a = 0.0; a <= 0.9 + 1e-9; a += 0.1) {
+                for (double b = 0.0; b <= 0.9 + 1e-9; b += 0.1) {
+                    for (double g = 0.0; g <= 0.9 + 1e-9; g += 0.1) {
+                        List<Double> fit = smooth(train, holdout, a, b, g);
+                        List<Double> validation = fit.subList(train.size(), train.size() + holdout);
+                        double rmse = ForecastEvaluator.rmse(testD, validation);
+                        if (rmse < bestRmse) {
+                            bestRmse = rmse;
+                            bestA = a;
+                            bestB = b;
+                            bestC = g;
+                        }
                     }
                 }
             }
+        } else {
+            List<Double> validation = smooth(train, holdout, bestA, bestB, bestC)
+                    .subList(train.size(), train.size() + holdout);
+            bestRmse = ForecastEvaluator.rmse(testD, validation);
         }
 
-        // compute accuracy on test slice
-        List<Double> testD = new ArrayList<>();
-        for (int v : test) testD.add((double) v);
-        List<Double> validation = bestForecast.subList(periods, periods + period);
+        List<Double> validation = smooth(train, holdout, bestA, bestB, bestC)
+                .subList(train.size(), train.size() + holdout);
         double mape = ForecastEvaluator.mape(testD, validation);
 
-        List<Double> future = bestForecast.subList(0, periods);
-        double interval = 1.96 * bestRmse;
-        List<Double> lower = new ArrayList<>();
-        List<Double> upper = new ArrayList<>();
-        for (double v : future) {
-            lower.add(v - interval);
-            upper.add(v + interval);
+        List<Double> fullFit = smooth(history, periods, bestA, bestB, bestC);
+        List<Double> future = fullFit.subList(history.size(), history.size() + periods);
+
+        double intervalBase = 1.96 * bestRmse;
+        List<Double> lower = new ArrayList<>(periods);
+        List<Double> upper = new ArrayList<>(periods);
+        for (int i = 0; i < periods; i++) {
+            double width = intervalBase * Math.sqrt(i + 1);
+            double v = future.get(i);
+            lower.add(Math.max(0, v - width));
+            upper.add(Math.max(0, v + width));
         }
+
         return new ForecastResult(future, bestA, bestB, bestC, mape, bestRmse, lower, upper);
     }
 
-    private List<Double> smooth(List<Integer> data, int periods, double a, double b, double g) {
+    private List<Double> smooth(List<Integer> data, int forecastPeriods, double a, double b, double g) {
         int n = data.size();
-        double[] level = new double[n + periods];
-        double[] trend = new double[n + periods];
-        double[] season = new double[n + periods];
-        List<Double> result = new ArrayList<>();
-        // initialise
-        level[0] = data.get(0);
-        trend[0] = (n > 1) ? data.get(1) - data.get(0) : 0;
-        int initLen = Math.min(period, n);
-        for (int i = 0; i < initLen; i++) {
-            season[i] = data.get(i);
-        }
-        for (int i = 0; i < n + periods; i++) {
-            if (i < n) {
-                double val = data.get(i);
-                double lastSeason = season[(i >= period) ? i - period : i];
-                level[i] = a * (val - lastSeason) + (1 - a) * (level[i > 0 ? i - 1 : 0] + trend[i > 0 ? i - 1 : 0]);
-                trend[i] = b * (level[i] - level[i > 0 ? i - 1 : 0]) + (1 - b) * trend[i > 0 ? i - 1 : 0];
-                season[i] = g * (val - level[i]) + (1 - g) * lastSeason;
-                result.add(level[i] + trend[i] + season[i]);
-            } else {
-                int idx = i;
-                double lastSeason = season[idx - period];
-                result.add((level[idx - 1] + trend[idx - 1]) + lastSeason);
-                level[idx] = level[idx - 1] + trend[idx - 1];
-                trend[idx] = trend[idx - 1];
-                season[idx] = season[idx - period];
+        int m = period;
+
+        if (n < 2 * m) {
+            double last = Math.max(0, data.get(n - 1));
+            List<Double> out = new ArrayList<>(n + forecastPeriods);
+            for (int t = 0; t < n; t++) {
+                out.add(null);
             }
+            for (int k = 0; k < forecastPeriods; k++) {
+                out.add(last);
+            }
+            return out;
         }
-        return result;
+
+        double level = avg(data, 0, m);
+        double level2 = avg(data, m, 2 * m);
+        double trend = (level2 - level) / m;
+
+        double[] season = new double[n];
+        for (int i = 0; i < m; i++) {
+            season[i] = data.get(i) - level;
+        }
+
+        List<Double> out = new ArrayList<>(n + forecastPeriods);
+        for (int i = 0; i < n + forecastPeriods; i++) {
+            out.add(null);
+        }
+
+        for (int t = m; t < n; t++) {
+            double yt = data.get(t);
+            double lastSeason = season[t - m];
+
+            double yhat = level + trend + lastSeason;
+            out.set(t, Math.max(0, yhat));
+
+            double newLevel = a * (yt - lastSeason) + (1 - a) * (level + trend);
+            double newTrend = b * (newLevel - level) + (1 - b) * trend;
+            double newSeason = g * (yt - newLevel) + (1 - g) * lastSeason;
+
+            level = newLevel;
+            trend = newTrend;
+            season[t] = newSeason;
+        }
+
+        for (int k = 1; k <= forecastPeriods; k++) {
+            double s = season[n - m + (k - 1) % m];
+            double forecast = Math.max(0, level + k * trend + s);
+            out.set(n + k - 1, forecast);
+        }
+
+        return out;
+    }
+
+    private double avg(List<Integer> data, int from, int toExclusive) {
+        double sum = 0;
+        for (int i = from; i < toExclusive; i++) {
+            sum += data.get(i);
+        }
+        return sum / (toExclusive - from);
     }
 }
 

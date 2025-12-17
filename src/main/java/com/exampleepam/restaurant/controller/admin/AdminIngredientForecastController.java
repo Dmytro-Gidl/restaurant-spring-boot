@@ -48,7 +48,7 @@ public class AdminIngredientForecastController extends BaseController {
         model.addAttribute(FILTER_ATTR, filter);
         model.addAttribute("type", type);
         model.addAttribute("model", modelName);
-        model.addAttribute("models", java.util.List.of("holt","arima","auto-arima"));
+        model.addAttribute("models", java.util.List.of("holt","arima"));
         model.addAttribute("categories", Category.values());
         return FORECAST_PAGE;
     }

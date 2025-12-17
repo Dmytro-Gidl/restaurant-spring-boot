@@ -78,6 +78,48 @@ public class ForecastModelTest {
         assertTrue(Double.isNaN(m.rmse()));
     }
 
+    @Test
+    void holtWintersRepeatsSeasonalPattern() {
+        HoltWintersModel model = new HoltWintersModel(2);
+        List<Integer> history = List.of(10, 20, 10, 20, 10, 20, 10, 20);
+        ForecastResult result = model.forecast(history, 4);
+
+        assertEquals(4, result.getForecasts().size());
+        assertEquals(10.0, result.getForecasts().get(0), 2.0);
+        assertEquals(20.0, result.getForecasts().get(1), 2.0);
+        assertEquals(10.0, result.getForecasts().get(2), 2.0);
+        assertEquals(20.0, result.getForecasts().get(3), 2.0);
+    }
+
+    @Test
+    void holtWintersCarriesTrendAndSeasonality() {
+        HoltWintersModel model = new HoltWintersModel(4);
+        List<Integer> history = List.of(
+                100, 120, 110, 130,
+                110, 130, 120, 140,
+                120, 140, 130, 150);
+
+        ForecastResult result = model.forecast(history, 4);
+
+        assertEquals(4, result.getForecasts().size());
+        assertTrue(result.getForecasts().get(0) < result.getForecasts().get(1));
+        assertTrue(result.getForecasts().get(2) < result.getForecasts().get(3));
+        assertTrue(result.getForecasts().get(3) >= 150.0);
+    }
+
+    @Test
+    void holtWintersClampsNegativeForecasts() {
+        HoltWintersModel model = new HoltWintersModel(2);
+        List<Integer> history = List.of(10, 0, 8, 0, 6, 0, 4, 0);
+
+        ForecastResult result = model.forecast(history, 4);
+
+        assertEquals(4, result.getForecasts().size());
+        for (double forecast : result.getForecasts()) {
+            assertTrue(forecast >= 0);
+        }
+    }
+
 //    @Test
 //    void monthlyForecasterKeepsActualsAndAppendsForecasts() {
 //        DishForecastRepository repo = Mockito.mock(DishForecastRepository.class);
