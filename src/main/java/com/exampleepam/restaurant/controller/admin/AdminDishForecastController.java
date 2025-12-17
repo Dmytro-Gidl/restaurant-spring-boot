@@ -56,7 +56,7 @@ public class AdminDishForecastController extends BaseController {
         model.addAttribute(FILTER_ATTR, filter);
         model.addAttribute(TYPE_ATTR, type);
         model.addAttribute("model", modelName);
-        model.addAttribute("models", java.util.List.of("holt","arima","auto-arima"));
+        model.addAttribute("models", java.util.List.of("holt","arima"));
         model.addAttribute("metrics", forecastService.getModelMetrics());
         model.addAttribute("categories", Category.values());
         return FORECAST_PAGE;
