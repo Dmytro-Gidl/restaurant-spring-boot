@@ -45,28 +45,34 @@ public class HoltWintersModel implements ForecastModel {
         List<Integer> test = history.subList(n - holdout, n);
 
         double bestRmse = Double.POSITIVE_INFINITY;
-        double bestA = 0.2, bestB = 0.1, bestC = 0.1;
-
-        for (double a = 0.1; a <= 1.0; a += 0.1) {
-            for (double b = 0.1; b <= 1.0; b += 0.1) {
-                for (double g = 0.1; g <= 1.0; g += 0.1) {
-                    List<Double> fit = smooth(train, holdout, a, b, g);
-                    List<Double> validation = fit.subList(train.size(), train.size() + holdout);
-                    List<Double> testD = new ArrayList<>(holdout);
-                    for (int v : test) testD.add((double) v);
-                    double rmse = ForecastEvaluator.rmse(testD, validation);
-                    if (rmse < bestRmse) {
-                        bestRmse = rmse;
-                        bestA = a;
-                        bestB = b;
-                        bestC = g;
-                    }
-                }
-            }
-        }
+        double bestA = 0.3, bestB = 0.1, bestC = 0.1;
+        boolean tuneable = train.size() >= 2 * period;
 
         List<Double> testD = new ArrayList<>(holdout);
         for (int v : test) testD.add((double) v);
+
+        if (tuneable) {
+            for (double a = 0.0; a <= 0.9 + 1e-9; a += 0.1) {
+                for (double b = 0.0; b <= 0.9 + 1e-9; b += 0.1) {
+                    for (double g = 0.0; g <= 0.9 + 1e-9; g += 0.1) {
+                        List<Double> fit = smooth(train, holdout, a, b, g);
+                        List<Double> validation = fit.subList(train.size(), train.size() + holdout);
+                        double rmse = ForecastEvaluator.rmse(testD, validation);
+                        if (rmse < bestRmse) {
+                            bestRmse = rmse;
+                            bestA = a;
+                            bestB = b;
+                            bestC = g;
+                        }
+                    }
+                }
+            }
+        } else {
+            List<Double> validation = smooth(train, holdout, bestA, bestB, bestC)
+                    .subList(train.size(), train.size() + holdout);
+            bestRmse = ForecastEvaluator.rmse(testD, validation);
+        }
+
         List<Double> validation = smooth(train, holdout, bestA, bestB, bestC)
                 .subList(train.size(), train.size() + holdout);
         double mape = ForecastEvaluator.mape(testD, validation);
@@ -74,12 +80,14 @@ public class HoltWintersModel implements ForecastModel {
         List<Double> fullFit = smooth(history, periods, bestA, bestB, bestC);
         List<Double> future = fullFit.subList(history.size(), history.size() + periods);
 
-        double interval = 1.96 * bestRmse;
+        double intervalBase = 1.96 * bestRmse;
         List<Double> lower = new ArrayList<>(periods);
         List<Double> upper = new ArrayList<>(periods);
-        for (double v : future) {
-            lower.add(Math.max(0, v - interval));
-            upper.add(Math.max(0, v + interval));
+        for (int i = 0; i < periods; i++) {
+            double width = intervalBase * Math.sqrt(i + 1);
+            double v = future.get(i);
+            lower.add(Math.max(0, v - width));
+            upper.add(Math.max(0, v + width));
         }
 
         return new ForecastResult(future, bestA, bestB, bestC, mape, bestRmse, lower, upper);
@@ -90,10 +98,10 @@ public class HoltWintersModel implements ForecastModel {
         int m = period;
 
         if (n < 2 * m) {
-            double last = data.get(n - 1);
+            double last = Math.max(0, data.get(n - 1));
             List<Double> out = new ArrayList<>(n + forecastPeriods);
-            for (int value : data) {
-                out.add((double) value);
+            for (int t = 0; t < n; t++) {
+                out.add(null);
             }
             for (int k = 0; k < forecastPeriods; k++) {
                 out.add(last);
@@ -111,9 +119,8 @@ public class HoltWintersModel implements ForecastModel {
         }
 
         List<Double> out = new ArrayList<>(n + forecastPeriods);
-
-        for (int t = 0; t < m; t++) {
-            out.add((double) data.get(t));
+        for (int i = 0; i < n + forecastPeriods; i++) {
+            out.add(null);
         }
 
         for (int t = m; t < n; t++) {
@@ -121,7 +128,7 @@ public class HoltWintersModel implements ForecastModel {
             double lastSeason = season[t - m];
 
             double yhat = level + trend + lastSeason;
-            out.add(yhat);
+            out.set(t, Math.max(0, yhat));
 
             double newLevel = a * (yt - lastSeason) + (1 - a) * (level + trend);
             double newTrend = b * (newLevel - level) + (1 - b) * trend;
@@ -134,7 +141,8 @@ public class HoltWintersModel implements ForecastModel {
 
         for (int k = 1; k <= forecastPeriods; k++) {
             double s = season[n - m + (k - 1) % m];
-            out.add(level + k * trend + s);
+            double forecast = Math.max(0, level + k * trend + s);
+            out.set(n + k - 1, forecast);
         }
 
         return out;

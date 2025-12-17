@@ -107,6 +107,19 @@ public class ForecastModelTest {
         assertTrue(result.getForecasts().get(3) >= 150.0);
     }
 
+    @Test
+    void holtWintersClampsNegativeForecasts() {
+        HoltWintersModel model = new HoltWintersModel(2);
+        List<Integer> history = List.of(10, 0, 8, 0, 6, 0, 4, 0);
+
+        ForecastResult result = model.forecast(history, 4);
+
+        assertEquals(4, result.getForecasts().size());
+        for (double forecast : result.getForecasts()) {
+            assertTrue(forecast >= 0);
+        }
+    }
+
 //    @Test
 //    void monthlyForecasterKeepsActualsAndAppendsForecasts() {
 //        DishForecastRepository repo = Mockito.mock(DishForecastRepository.class);
