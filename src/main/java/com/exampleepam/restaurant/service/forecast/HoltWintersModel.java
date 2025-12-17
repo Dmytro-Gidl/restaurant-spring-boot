@@ -95,7 +95,8 @@ public class HoltWintersModel implements ForecastModel {
         List<Double> validation = bestForecast.subList(periods, periods + period);
         double mape = ForecastEvaluator.mape(testD, validation);
 
-        List<Double> future = bestForecast.subList(0, periods);
+        int forecastStart = Math.max(0, bestForecast.size() - periods);
+        List<Double> future = bestForecast.subList(forecastStart, bestForecast.size());
         double interval = 1.96 * bestRmse;
         List<Double> lower = new ArrayList<>();
         List<Double> upper = new ArrayList<>();
