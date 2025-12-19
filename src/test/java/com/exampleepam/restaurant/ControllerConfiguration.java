@@ -2,6 +2,8 @@ package com.exampleepam.restaurant;
 
 import com.exampleepam.restaurant.entity.User;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
+import com.exampleepam.restaurant.security.CustomAuthenticationSuccessHandler;
+import com.exampleepam.restaurant.service.UserService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -31,5 +33,10 @@ public class ControllerConfiguration {
         };
     }
 
+    @Bean
+    @Primary
+    public CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler(UserService userService) {
+        return new CustomAuthenticationSuccessHandler(userService);
+    }
 
 }

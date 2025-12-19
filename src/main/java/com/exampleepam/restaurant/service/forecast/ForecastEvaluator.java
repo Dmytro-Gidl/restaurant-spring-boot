@@ -14,7 +14,9 @@ public final class ForecastEvaluator {
         int n = actual.size();
         for (int i = 0; i < n; i++) {
             double a = actual.get(i);
-            if (a == 0) continue;
+            if (a == 0) {
+                continue;
+            }
             sum += Math.abs((a - forecast.get(i)) / a);
             count++;
         }
@@ -71,4 +73,3 @@ public final class ForecastEvaluator {
         return folds == 0 ? new Metrics(Double.NaN, Double.NaN) : new Metrics(mapeSum / folds, rmseSum / folds);
     }
 }
-

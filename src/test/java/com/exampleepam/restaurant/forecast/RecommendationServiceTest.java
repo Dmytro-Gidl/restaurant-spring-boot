@@ -2,6 +2,9 @@ package com.exampleepam.restaurant.forecast;
 
 import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.entity.Dish;
+import com.exampleepam.restaurant.entity.Order;
+import com.exampleepam.restaurant.entity.OrderItem;
+import com.exampleepam.restaurant.entity.Review;
 import com.exampleepam.restaurant.entity.Status;
 import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
@@ -37,22 +40,30 @@ public class RecommendationServiceTest {
         RecommendationService service = new RecommendationService(dishRepository, dishMapper, reviewRepository, orderRepository,
                 factorizationService, ratingMatrixBuilder, collaborativePredictor, categoryFallback);
 
-        RatingData data = new RatingData(Map.of(2L, Map.of(1L, 1.0)), Map.of(2L, 1.0));
-        when(reviewRepository.findAllWithUserAndDish()).thenReturn(List.of());
-        when(orderRepository.findByStatus(Status.COMPLETED)).thenReturn(List.of());
-        when(ratingMatrixBuilder.build(anyList(), anyList())).thenReturn(data);
-        when(collaborativePredictor.predict(eq(1L), eq(data))).thenReturn(Map.of(1L, 4.0));
-        when(factorizationService.isReady()).thenReturn(true);
+        long userId = 1L;
+        long dishId = 1L;
         Dish dish = new Dish();
-        dish.setId(1L);
+        dish.setId(dishId);
+        Review review = new Review();
+        review.setDish(dish);
+        Order order = new Order();
+        OrderItem orderItem = new OrderItem(dish, 1);
+        order.setOrderItems(List.of(orderItem));
+
+        RatingData data = new RatingData(Map.of(userId, Map.of()), Map.of());
+        when(reviewRepository.findAllWithUserAndDish()).thenReturn(List.of(review));
+        when(orderRepository.findByStatus(Status.COMPLETED)).thenReturn(List.of(order));
+        when(ratingMatrixBuilder.build(anyList(), anyList())).thenReturn(data);
+        when(collaborativePredictor.predict(eq(userId), eq(data))).thenReturn(Map.of(dishId, 4.0));
+        when(factorizationService.isReady()).thenReturn(true);
         when(dishRepository.findAllById(anySet())).thenReturn(List.of(dish));
         DishResponseDto dto = new DishResponseDto();
-        dto.setId(1L);
+        dto.setId(dishId);
         when(dishMapper.toDishResponseDtoList(anyList())).thenReturn(List.of(dto));
-        when(reviewRepository.getAverageRatingByDishId(1L)).thenReturn(0.0);
-        when(reviewRepository.countByDishId(1L)).thenReturn(0L);
+        when(reviewRepository.getAverageRatingByDishId(dishId)).thenReturn(0.0);
+        when(reviewRepository.countByDishId(dishId)).thenReturn(0L);
 
-        List<DishResponseDto> result = service.getRecommendedDishes(1L, 1);
+        List<DishResponseDto> result = service.getRecommendedDishes(userId, 1);
         assertEquals(1, result.size());
         verify(categoryFallback, never()).recommend(anyLong(), anySet(), anyInt());
     }
@@ -71,15 +82,24 @@ public class RecommendationServiceTest {
         RecommendationService service = new RecommendationService(dishRepository, dishMapper, reviewRepository, orderRepository,
                 factorizationService, ratingMatrixBuilder, collaborativePredictor, categoryFallback);
 
-        RatingData data = new RatingData(Map.of(), Map.of());
-        when(reviewRepository.findAllWithUserAndDish()).thenReturn(List.of());
-        when(orderRepository.findByStatus(Status.COMPLETED)).thenReturn(List.of());
-        when(ratingMatrixBuilder.build(anyList(), anyList())).thenReturn(data);
-        when(collaborativePredictor.predict(eq(1L), eq(data))).thenReturn(Map.of());
-        List<DishResponseDto> fallback = List.of(new DishResponseDto());
-        when(categoryFallback.recommend(eq(1L), anySet(), eq(2))).thenReturn(fallback);
+        long userId = 1L;
+        long dishId = 10L;
+        Dish dish = new Dish();
+        dish.setId(dishId);
+        Order order = new Order();
+        OrderItem orderItem = new OrderItem(dish, 1);
+        order.setOrderItems(List.of(orderItem));
 
-        List<DishResponseDto> result = service.getRecommendedDishes(1L, 2);
+        RatingData data = new RatingData(Map.of(userId, Map.of(dishId, 1.0)), Map.of(dishId, 1.0));
+        when(reviewRepository.findAllWithUserAndDish()).thenReturn(List.of());
+        when(orderRepository.findByStatus(Status.COMPLETED)).thenReturn(List.of(order));
+        when(ratingMatrixBuilder.build(anyList(), anyList())).thenReturn(data);
+        when(collaborativePredictor.predict(eq(userId), eq(data))).thenReturn(Map.of());
+        when(factorizationService.isReady()).thenReturn(true);
+        List<DishResponseDto> fallback = List.of(new DishResponseDto());
+        when(categoryFallback.recommend(eq(userId), anySet(), eq(2))).thenReturn(fallback);
+
+        List<DishResponseDto> result = service.getRecommendedDishes(userId, 2);
         assertEquals(fallback, result);
     }
 }

@@ -3,6 +3,7 @@ package com.exampleepam.restaurant.controller;
 import com.exampleepam.restaurant.ControllerConfiguration;
 import com.exampleepam.restaurant.security.MyUserDetailsService;
 import com.exampleepam.restaurant.service.DishService;
+import com.exampleepam.restaurant.service.RecommendationService;
 import com.exampleepam.restaurant.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -33,6 +34,8 @@ public class DishControllerTest {
     DishService dishService;
     @MockBean
     UserService userService;
+    @MockBean
+    RecommendationService recommendationService;
     @MockBean
     MyUserDetailsService myUserDetailsService;
     @MockBean

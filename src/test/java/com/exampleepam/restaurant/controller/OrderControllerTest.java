@@ -5,6 +5,7 @@ import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.security.MyUserDetailsService;
 import com.exampleepam.restaurant.service.DishService;
 import com.exampleepam.restaurant.service.OrderService;
+import com.exampleepam.restaurant.service.RecommendationService;
 import com.exampleepam.restaurant.service.UserService;
 import com.exampleepam.restaurant.test_data.TestData;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,8 @@ public class OrderControllerTest {
     @MockBean
     DishService dishService;
     @MockBean
+    RecommendationService recommendationService;
+    @MockBean
     MyUserDetailsService myUserDetailsService;
     @MockBean
     Model model;
@@ -60,7 +63,7 @@ public class OrderControllerTest {
                         .with(csrf());
 
         mockMvc.perform(mockRequest)
-                .andExpect(MockMvcResultMatchers.redirectedUrl("/orders/history"));
+                .andExpect(MockMvcResultMatchers.redirectedUrl("/orders/history?clearCart"));
         AuthenticatedUser authenticatedUser = getBasicUserDetails();
         Mockito.verify(orderService, times(1)).saveOrder(orderCreation, authenticatedUser);
     }
