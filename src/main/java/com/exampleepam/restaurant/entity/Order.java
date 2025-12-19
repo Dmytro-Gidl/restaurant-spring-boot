@@ -34,8 +34,6 @@ import java.util.List;
 @ToString
 public class Order extends AbstractBaseEntity {
 
-    // Increase to 50 so it matches validation constraints in OrderCreationDto
-    // and avoids DataIntegrityViolationException when user enters longer addresses
     @Column(length = 50)
     private String address;
     private LocalDateTime creationDateTime;

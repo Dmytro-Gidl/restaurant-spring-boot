@@ -20,6 +20,14 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
 
     List<Dish> findAllByArchivedFalse(Sort sort);
 
+    List<Dish> findByNameContainingIgnoreCaseAndArchivedFalse(String name, Sort sort);
+
+    Page<Dish> findByNameContainingIgnoreCaseAndArchivedFalse(String name, Pageable pageable);
+
+    Page<Dish> findByCategoryAndArchivedFalse(Category category, Pageable pageable);
+
+    Page<Dish> findByNameContainingIgnoreCaseAndCategoryAndArchivedFalse(String name, Category category, Pageable pageable);
+
     Page<Dish> findAllByArchivedTrue(Pageable pageable);
 
     List<Dish> findAllByArchivedTrue(Sort sort);

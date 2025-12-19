@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="#{ingredientForecast.title}">Ingredient Forecast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+            url('/images/saveInPhotoshop.png') no-repeat center center;
+            background-size: cover;
+            color: #fff;
+        }
+        .card { background-color: rgba(255,255,255,0.1); border:none; }
+        .search-form { max-width: 250px; }
+        .chart-container { height: 250px; }
+        .form-select option { background-color: #343a40; color: #fff; }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/topnav :: navbar"></div>
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0" th:text="#{ingredientForecast.title}">Ingredient Forecast</h2>
+        <form class="d-flex" method="get" th:action="@{/admin/ingredient-forecast}">
+            <select name="model" class="form-select form-select-sm me-2 bg-dark text-light border-secondary">
+                <option th:each="m : ${models}" th:value="${m}" th:text="${m}" th:selected="${model == m}"></option>
+            </select>
+            <select name="type" class="form-select form-select-sm me-2 bg-dark text-light border-secondary">
+                <option value="" th:selected="${type == null}" th:text="#{ingredientForecast.filter.category.all}">All</option>
+                <option th:each="c : ${categories}" th:value="${c}" th:selected="${type == c}"
+                        th:text="${#strings.capitalize(c.toString().toLowerCase())}">Category</option>
+            </select>
+            <input type="text" name="filter" th:value="${filter}" th:placeholder="#{ingredientForecast.filter.placeholder}"
+                   class="form-control form-control-sm me-2 search-form bg-transparent text-light border-secondary">
+            <button class="btn btn-sm btn-outline-light" type="submit"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
+
+    <details class="text-light mb-1">
+        <summary>Methodology</summary>
+        <p class="mb-0">Ingredient forecasts aggregate dish predictions produced via Holt-Winters smoothing. Quantities are normalised to each ingredient's base unit.</p>
+    </details>
+    <p class="text-light small mb-3">Identical forecast lines often stem from limited completed orders.</p>
+
+    <div class="row row-cols-1 row-cols-md-2 g-4" th:if="${forecasts != null && !forecasts.isEmpty()}">
+        <div class="col" th:each="f : ${forecasts}">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0" th:text="${f.name + ' (' + f.unit.toString().toLowerCase() + ')'}">Ingredient</h5>
+                        <select class="form-select form-select-sm bg-dark text-light border-secondary w-auto" th:attr="id=${'scale-' + f.id}" th:title="#{ingredientForecast.scale}">
+                            <option value="monthly" th:text="#{ingredientForecast.monthly}" selected>Monthly</option>
+                            <option value="daily" th:text="#{ingredientForecast.daily}">Daily</option>
+                            <option value="hourly" th:text="#{ingredientForecast.hourly}">Hourly</option>
+                        </select>
+                    </div>
+                    <div class="chart-container" style="height:250px;">
+                        <canvas th:if="${!f.noData}" th:attr="id=${'chart-' + f.id}"></canvas>
+                        <div th:if="${f.noData}"
+                             class="d-flex justify-content-center align-items-center h-100 text-muted fs-4">
+                            <span role="img" aria-label="no data" class="me-2">📂</span>
+                            <span>No data</span>
+                        </div>
+                    </div>
+                    <p class="text-warning small mt-2" th:if="${f.noData}">No completed orders yet; forecasts start after some history is recorded.</p>
+                    <p class="text-warning small mt-2" th:if="${!f.noData && f.singlePoint}">Only one month has completed orders; all models repeat this value.</p>
+                    <p class="text-warning small mt-2" th:if="${!f.noData && f.emptyForecast}">The selected model returned no predictions for this ingredient; chart is left empty.</p>
+                    <details class="text-light mt-2">
+                        <summary>Details</summary>
+                        <div class="small" th:attr="id=${'details-' + f.id}"></div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center text-light" th:if="${forecasts == null || forecasts.isEmpty()}">
+        <span th:text="#{ingredientForecast.no.results}">No forecasts found</span>
+    </div>
+
+    <div class="d-flex justify-content-center mt-4" th:if="${page.totalPages > 1}">
+        <nav>
+            <ul class="pagination">
+                <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                    <a class="page-link" th:href="@{/admin/ingredient-forecast(page=${page.number-1}, filter=${filter}, type=${type}, model=${model})}" aria-label="Previous">&laquo;</a>
+                </li>
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages-1)}" th:classappend="${i==page.number}? 'active'">
+                    <a class="page-link" th:href="@{/admin/ingredient-forecast(page=${i}, filter=${filter}, type=${type}, model=${model})}" th:text="${i+1}"></a>
+                </li>
+                <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                    <a class="page-link" th:href="@{/admin/ingredient-forecast(page=${page.number+1}, filter=${filter}, type=${type}, model=${model})}" aria-label="Next">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<script th:inline="javascript">
+const forecasts = /*[[${forecasts}]]*/ [];
+const zoomPlugin = window.ChartZoom?.default ?? window.ChartZoom;
+Chart.register(zoomPlugin);
+const charts = {};
+function computeRange(scale, labels, actual) {
+    const now = new Date();
+    let pos;
+    if (scale === 'monthly') {
+        const current = now.toISOString().slice(0,7);
+        pos = labels.indexOf(current);
+        if (pos < 0) pos = labels.length - 1;
+        return { min: Math.max(0, pos - 6), max: Math.min(labels.length - 1, pos + 6) };
+    }
+    if (scale === 'daily') {
+        const current = now.toISOString().slice(0,10);
+        pos = labels.indexOf(current);
+        if (pos < 0) pos = labels.length - 1;
+        return { min: Math.max(0, pos - 7), max: Math.min(labels.length - 1, pos + 7) };
+    }
+    const current = now.toISOString().slice(0,13);
+    pos = labels.findIndex(l => l.startsWith(current));
+    if (pos < 0) pos = labels.length - 1;
+    return { min: Math.max(0, pos - 24), max: Math.min(labels.length - 1, pos + 24) };
+}
+
+function updateYScale(chart) {
+    const all = chart.data.datasets.flatMap(d => d.data).filter(v => v !== null && v !== undefined);
+    chart.options.scales.y.max = all.length ? Math.max(...all) : 1;
+}
+
+function loadDetails(id) {
+    fetch(`/admin/ingredient-forecast/details?ingredientId=${id}`)
+        .then(r => r.json())
+        .then(d => {
+            const el = document.getElementById('details-' + id);
+            if (d && d.length) {
+                const latest = d[d.length - 1];
+                el.innerText = `Latest forecast: ${latest.quantity.toFixed(2)} on ${latest.date}`;
+            } else {
+                el.innerText = 'No details available';
+            }
+        })
+        .catch(() => {
+            const el = document.getElementById('details-' + id);
+            if (el) el.innerText = 'Failed to load details';
+        });
+}
+
+forecasts.forEach(f => {
+    if (f.noData) return;
+    const ctx = document.getElementById('chart-' + f.id).getContext('2d');
+    const maxIndex = f.labels.monthly.length - 1;
+    const monthRange = computeRange('monthly', f.labels.monthly, f.actualData.monthly);
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: f.labels.monthly,
+            datasets: [
+                {
+                    label: /*[[#{ingredientForecast.actual}]]*/ 'Actual',
+                    data: f.actualData.monthly,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    spanGaps: true
+                },
+                {
+                    label: /*[[#{ingredientForecast.predicted}]]*/ 'Forecast',
+                    data: f.forecastData.monthly,
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                    spanGaps: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: {
+                    min: monthRange.min,
+                    max: monthRange.max,
+                    ticks: { color: '#fff' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
+                y: { beginAtZero: true, ticks: { color: '#fff', precision: 0 }, grid: { color: 'rgba(255,255,255,0.1)' } }
+            },
+            plugins: {
+                tooltip: { enabled: true, mode: 'index', intersect: false },
+                legend: { labels: { color: '#fff' } },
+                zoom: {
+                    pan: { enabled: false },
+                    zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                }
+            }
+        }
+    });
+    charts[f.id] = { chart: chart, data: f, maxIndex: maxIndex };
+    updateYScale(chart);
+    const det = document.getElementById('details-' + f.id);
+    det.parentElement.addEventListener('toggle', e => {
+        if (e.target.open) loadDetails(f.id);
+    }, {once: true});
+
+    let startX = null;
+    ctx.canvas.addEventListener('mousedown', e => { startX = e.offsetX; });
+    ctx.canvas.addEventListener('mousemove', e => {
+        if (startX === null) return;
+        const info = charts[f.id];
+        const opts = info.chart.options.scales.x;
+        const chartArea = info.chart.chartArea;
+        const delta = (startX - e.offsetX) * (opts.max - opts.min) / (chartArea.right - chartArea.left);
+        let newMin = opts.min + delta;
+        let newMax = opts.max + delta;
+        const range = opts.max - opts.min;
+        if (newMin < 0) { newMin = 0; newMax = range; }
+        if (newMax > info.maxIndex) { newMax = info.maxIndex; newMin = newMax - range; }
+        opts.min = newMin;
+        opts.max = newMax;
+        startX = e.offsetX;
+        info.chart.update('none');
+    });
+    ['mouseup','mouseleave'].forEach(evt => ctx.canvas.addEventListener(evt, () => startX = null));
+
+    document.getElementById('scale-' + f.id).addEventListener('change', e => {
+        const scale = e.target.value;
+        const info = charts[f.id];
+        info.chart.data.labels = info.data.labels[scale];
+        info.chart.data.datasets[0].data = info.data.actualData[scale];
+        info.chart.data.datasets[1].data = info.data.forecastData[scale];
+        const range = computeRange(scale, info.data.labels[scale], info.data.actualData[scale]);
+        info.maxIndex = info.data.labels[scale].length - 1;
+        info.chart.options.scales.x.min = range.min;
+        info.chart.options.scales.x.max = Math.min(range.max, info.maxIndex);
+        updateYScale(info.chart);
+        info.chart.update();
+    });
+});
+</script>
+</body>
+</html>

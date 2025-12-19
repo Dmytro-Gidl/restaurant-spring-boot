@@ -3,6 +3,7 @@ package com.exampleepam.restaurant.controller;
 import com.exampleepam.restaurant.ControllerConfiguration;
 import com.exampleepam.restaurant.security.MyUserDetailsService;
 import com.exampleepam.restaurant.service.DishService;
+import com.exampleepam.restaurant.service.RecommendationService;
 import com.exampleepam.restaurant.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 
 import static com.exampleepam.restaurant.test_data.TestData.USER_EMAIL;
 import static com.exampleepam.restaurant.test_data.TestData.getDishResponseDtos;
+import static com.exampleepam.restaurant.test_data.TestData.getDishResponseDtosPaged;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -32,6 +34,8 @@ public class DishControllerTest {
     DishService dishService;
     @MockBean
     UserService userService;
+    @MockBean
+    RecommendationService recommendationService;
     @MockBean
     MyUserDetailsService myUserDetailsService;
     @MockBean

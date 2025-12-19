@@ -7,6 +7,9 @@ import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.DishService;
+import java.util.*;
+import java.util.stream.Collectors;
+import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,8 +28,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.validation.Valid;
-
 /**
  * Dish Controller for Admins
  */
@@ -35,18 +36,26 @@ import javax.validation.Valid;
 @RequestMapping("/admin/dishes")
 public class AdminDishController extends BaseController {
 
-    private static final String DISH_PAGED_ATTRIBUTE_NAME = "dishPaged";
-    private static final String DISH_ATTRIBUTE_NAME = "dish";
-    private static final String REDIRECT_TO_ADMIN_DISHES = "redirect:/admin/dishes";
-    private static final String DISH_UPDATE_PAGE = "dish-update";
-    private static final String DISH_ADD_PAGE = "dish-add";
-    private static final String IMAGE_PARAM = "images";
-    private static final String PRIMARY_INDEX_PARAM = "primaryIndex";
-    private static final String DISHES_MANAGEMENT_PAGE = "dishes-management";
+    private static final String DISH_PAGED = "dishPaged";
+    private static final String DISH_ATTR = "dish";
+    private static final String CATEGORIES_ATTR = "categories";
+
+    private static final String REDIRECT_BASE = "redirect:/admin/dishes";
+    private static final String PAGE_DISH_UPDATE = "dish-update";
+    private static final String PAGE_DISH_ADD = "dish-add";
+    private static final String PAGE_DISHES_MGMT = "dishes-management";
+
+    private static final String PARAM_IMAGES = "images";
+    private static final String PARAM_PRIMARY_INDEX = "primaryIndex";
+    private static final String PARAM_EXISTING_IMAGES = "existingImages";
+    private static final String PARAM_UPDATE_IMAGES = "updateImages";
+    private static final String PARAM_DELETE_IMAGES = "deleteImages";
+
     private static final int DEFAULT_PAGE = 1;
     private static final String DEFAULT_SORT_FIELD = "category";
     private static final String DEFAULT_FILTER_CATEGORY = "all";
     private static final int DEFAULT_PAGE_SIZE = 10;
+
     private final DishService dishService;
 
     @Autowired
@@ -54,227 +63,217 @@ public class AdminDishController extends BaseController {
         this.dishService = dishService;
     }
 
-    @GetMapping(value = {"", "/{id}"})
-    public String getDishDefault(@AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-                                 Model model) {
-        return findPaginated(DEFAULT_PAGE,
-                DEFAULT_SORT_FIELD, ASCENDING_ORDER_SORTING, DEFAULT_FILTER_CATEGORY, DEFAULT_PAGE_SIZE, authenticatedUser, model);
+    @GetMapping("")
+    public String getDishDefault(@AuthenticationPrincipal AuthenticatedUser user, Model model) {
+        return findPaginated(
+                DEFAULT_PAGE,
+                DEFAULT_SORT_FIELD,
+                ASCENDING_ORDER_SORTING,
+                DEFAULT_FILTER_CATEGORY,
+                DEFAULT_PAGE_SIZE,
+                user,
+                model
+        );
     }
 
     @GetMapping("/page/{pageNo}")
     public String findPaginated(@PathVariable(PAGE_NUMBER_PARAM) int pageNo,
-                                @RequestParam(SORT_FIELD_PARAM) String sortField,
-                                @RequestParam(SORT_DIR_PARAM) String sortDir,
-                                @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory,
-                                @RequestParam(PAGE_SIZE_PARAM) int pageSize,
-                                @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+                                @RequestParam(value = SORT_FIELD_PARAM, defaultValue = DEFAULT_SORT_FIELD) String sortField,
+                                @RequestParam(value = SORT_DIR_PARAM, defaultValue = ASCENDING_ORDER_SORTING) String sortDir,
+                                @RequestParam(value = FILTER_CATEGORY_PARAM, defaultValue = DEFAULT_FILTER_CATEGORY) String filterCategory,
+                                @RequestParam(value = PAGE_SIZE_PARAM, defaultValue = "" + DEFAULT_PAGE_SIZE) int pageSize,
+                                @AuthenticationPrincipal AuthenticatedUser user,
                                 Model model) {
-        String normalizedCategory = filterCategory == null ? DEFAULT_FILTER_CATEGORY
-                : filterCategory.replace("\"", "").toLowerCase();
 
-        Paged<DishResponseDto> pagedOrder = dishService.findPaginated(pageNo, pageSize,
-                sortField, sortDir, normalizedCategory);
+        final String normalizedCategory = normalizeCategory(filterCategory);
+
+        Paged<DishResponseDto> paged = dishService.findPaginated(
+                pageNo, pageSize, sortField, sortDir, normalizedCategory
+        );
 
         model.addAttribute(FILTER_CATEGORY_PARAM, normalizedCategory);
         model.addAttribute(CURRENT_PAGE_PARAM, pageNo);
-
         model.addAttribute(SORT_FIELD_PARAM, sortField);
         model.addAttribute(PAGE_SIZE_PARAM, pageSize);
         model.addAttribute(SORT_DIR_PARAM, sortDir);
-        model.addAttribute(REVERSE_SORT_DIR_PARAM, sortDir.equals(ASCENDING_ORDER_SORTING) ? DESCENDING_ORDER_SORTING : ASCENDING_ORDER_SORTING);
+        model.addAttribute(REVERSE_SORT_DIR_PARAM,
+                ASCENDING_ORDER_SORTING.equals(sortDir) ? DESCENDING_ORDER_SORTING : ASCENDING_ORDER_SORTING);
 
-        model.addAttribute(DISH_PAGED_ATTRIBUTE_NAME, pagedOrder);
+        model.addAttribute(DISH_PAGED, paged);
 
-        return DISHES_MANAGEMENT_PAGE;
+        return PAGE_DISHES_MGMT;
     }
 
     @GetMapping("/newDishForm")
     public String returnDishCreationForm(Model model) {
-        model.addAttribute(DISH_ATTRIBUTE_NAME, new DishCreationDto());
-        model.addAttribute("categories", CategoryDto.values());
-        return DISH_ADD_PAGE;
+        model.addAttribute(DISH_ATTR, new DishCreationDto());
+        model.addAttribute(CATEGORIES_ATTR, CategoryDto.values());
+        return PAGE_DISH_ADD;
     }
 
     @PostMapping
-    public String saveNewDish(@Valid @ModelAttribute(DISH_ATTRIBUTE_NAME) DishCreationDto dishCreationDto,
+    public String saveNewDish(@Valid @ModelAttribute(DISH_ATTR) DishCreationDto dto,
                               BindingResult bindingResult,
-                              @RequestParam(IMAGE_PARAM) java.util.List<MultipartFile> multipartFiles,
-                              @RequestParam(value = PRIMARY_INDEX_PARAM, defaultValue = "0") int primaryIndex,
+                              @RequestParam(PARAM_IMAGES) List<MultipartFile> files,
+                              @RequestParam(value = PARAM_PRIMARY_INDEX, defaultValue = "0") int primaryIndex,
                               Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute(DISH_ATTRIBUTE_NAME, dishCreationDto);
-            model.addAttribute("categories", CategoryDto.values());
-            return DISH_ADD_PAGE;
+            model.addAttribute(DISH_ATTR, dto);
+            model.addAttribute(CATEGORIES_ATTR, CategoryDto.values());
+            return PAGE_DISH_ADD;
         }
 
-        multipartFiles.removeIf(MultipartFile::isEmpty);
-        if (!multipartFiles.isEmpty()) {
-            java.util.List<String> fileNames = new java.util.ArrayList<>();
-            for (MultipartFile file : multipartFiles) {
-                fileNames.add(StringUtils.cleanPath(file.getOriginalFilename()));
-            }
-            if (primaryIndex < 0 || primaryIndex >= fileNames.size()) {
-                primaryIndex = 0;
-            }
-            dishCreationDto.setImageFileName(fileNames.get(primaryIndex));
-            dishCreationDto.setGalleryImageFileNames(fileNames);
-            dishService.saveWithFiles(dishCreationDto, multipartFiles);
+        final List<MultipartFile> nonEmpty = normalizeFiles(files);
+        if (!nonEmpty.isEmpty()) {
+            final List<String> fileNames = toSafeFileNames(nonEmpty);
+            final int idx = clampIndex(primaryIndex, fileNames.size());
+            dto.setImageFileName(fileNames.get(idx));
+            dto.setGalleryImageFileNames(fileNames);
+            dishService.saveWithFiles(dto, nonEmpty);
         } else {
-            dishService.save(dishCreationDto);
+            dishService.save(dto);
         }
-        return REDIRECT_TO_ADMIN_DISHES;
+        return REDIRECT_BASE;
     }
 
-
     @DeleteMapping("/{id}/page/{page}")
-    public String deleteDish(
-            @PathVariable(value = "id") int id,
-            @PathVariable(value = "page") int pageNo,
-            @RequestParam(SORT_FIELD_PARAM) String sortField,
-            @RequestParam(SORT_DIR_PARAM) String sortDir,
-            @RequestParam(PAGE_SIZE_PARAM) int pageSize,
-            @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory
-    ) {
+    public String deleteDish(@PathVariable("id") long id,
+                             @PathVariable("page") int pageNo,
+                             @RequestParam(SORT_FIELD_PARAM) String sortField,
+                             @RequestParam(SORT_DIR_PARAM) String sortDir,
+                             @RequestParam(PAGE_SIZE_PARAM) int pageSize,
+                             @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory) {
         dishService.deleteDishById(id);
-
-
-        String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
-                .queryParam(SORT_FIELD_PARAM, sortField)
-                .queryParam(SORT_DIR_PARAM, sortDir)
-                .queryParam(PAGE_SIZE_PARAM, pageSize)
-                .queryParam(FILTER_CATEGORY_PARAM, filterCategory)
-                .buildAndExpand(pageNo)
-                .toUriString();
-        return "redirect:" + redirectLink;
+        return "redirect:" + buildRedirect(pageNo, sortField, sortDir, pageSize, filterCategory);
     }
 
     @PutMapping("/{id}/restore/page/{page}")
-    public String restoreDish(
-            @PathVariable("id") long id,
-            @PathVariable("page") int pageNo,
-            @RequestParam(SORT_FIELD_PARAM) String sortField,
-            @RequestParam(SORT_DIR_PARAM) String sortDir,
-            @RequestParam(PAGE_SIZE_PARAM) int pageSize,
-            @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory) {
+    public String restoreDish(@PathVariable("id") long id,
+                              @PathVariable("page") int pageNo,
+                              @RequestParam(SORT_FIELD_PARAM) String sortField,
+                              @RequestParam(SORT_DIR_PARAM) String sortDir,
+                              @RequestParam(PAGE_SIZE_PARAM) int pageSize,
+                              @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory) {
         dishService.restoreDishById(id);
-
-        String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
-                .queryParam(SORT_FIELD_PARAM, sortField)
-                .queryParam(SORT_DIR_PARAM, sortDir)
-                .queryParam(PAGE_SIZE_PARAM, pageSize)
-                .queryParam(FILTER_CATEGORY_PARAM, filterCategory)
-                .buildAndExpand(pageNo)
-                .toUriString();
-        return "redirect:" + redirectLink;
+        return "redirect:" + buildRedirect(pageNo, sortField, sortDir, pageSize, filterCategory);
     }
 
     @DeleteMapping("/{id}/hard-delete/page/{page}")
-    public String hardDeleteDish(
-            @PathVariable("id") long id,
-            @PathVariable("page") int pageNo,
-            @RequestParam(SORT_FIELD_PARAM) String sortField,
-            @RequestParam(SORT_DIR_PARAM) String sortDir,
-            @RequestParam(PAGE_SIZE_PARAM) int pageSize,
-            @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory) {
+    public String hardDeleteDish(@PathVariable("id") long id,
+                                 @PathVariable("page") int pageNo,
+                                 @RequestParam(SORT_FIELD_PARAM) String sortField,
+                                 @RequestParam(SORT_DIR_PARAM) String sortDir,
+                                 @RequestParam(PAGE_SIZE_PARAM) int pageSize,
+                                 @RequestParam(FILTER_CATEGORY_PARAM) String filterCategory) {
         dishService.hardDeleteDish(id);
+        return "redirect:" + buildRedirect(pageNo, sortField, sortDir, pageSize, filterCategory);
+    }
 
-        String redirectLink = UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
+    @PutMapping("/{id}")
+    public String updateDish(@Valid @ModelAttribute(DISH_ATTR) DishCreationDto dto,
+                             BindingResult bindingResult,
+                             @RequestParam(value = PARAM_IMAGES, required = false) List<MultipartFile> newImages,
+                             @RequestParam(value = PARAM_EXISTING_IMAGES, required = false) List<String> existingImages,
+                             @RequestParam(value = PARAM_UPDATE_IMAGES, required = false) List<MultipartFile> updateImages,
+                             @RequestParam(value = PARAM_DELETE_IMAGES, required = false) List<String> deleteImages,
+                             @RequestParam(value = PARAM_PRIMARY_INDEX, defaultValue = "0") int primaryIndex,
+                             Model model) {
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute(DISH_ATTR, dto);
+            model.addAttribute(CATEGORIES_ATTR, CategoryDto.values());
+            return PAGE_DISH_UPDATE;
+        }
+
+        final List<MultipartFile> newImagesNorm = normalizeFiles(newImages);
+        final List<String> existing = new ArrayList<>(Optional.ofNullable(existingImages).orElseGet(List::of));
+        final List<MultipartFile> updates = Optional.ofNullable(updateImages).orElseGet(List::of);
+        final List<String> deletions = Optional.ofNullable(deleteImages).orElseGet(List::of);
+
+        // drop deletions from existing
+        existing.removeAll(deletions);
+
+        // compute replacements (position-based)
+        final Map<String, MultipartFile> replacements = new HashMap<>();
+        for (int i = 0; i < Math.min(existing.size(), updates.size()); i++) {
+            MultipartFile f = updates.get(i);
+            if (f != null && !f.isEmpty()) {
+                replacements.put(existing.get(i), f);
+            }
+        }
+
+        // assemble all names to determine primary + gallery
+        final List<String> newNames = toSafeFileNames(newImagesNorm);
+        final List<String> allNames = new ArrayList<>(existing);
+        allNames.addAll(newNames);
+
+        if (allNames.isEmpty()) {
+            dto.setImageFileName(null);
+            dto.setGalleryImageFileNames(List.of());
+        } else {
+            final int idx = clampIndex(primaryIndex, allNames.size());
+            final String primaryName = allNames.get(idx);
+            dto.setImageFileName(primaryName);
+
+            final List<String> gallery = new ArrayList<>(allNames);
+            gallery.remove(primaryName);
+            dto.setGalleryImageFileNames(gallery);
+        }
+
+        dishService.updateWithFiles(dto, newImagesNorm, replacements, deletions);
+        return REDIRECT_BASE;
+    }
+
+    @GetMapping("{id}/update-form")
+    public String returnDishUpdateForm(@PathVariable("id") long id, Model model) {
+        DishResponseDto dto = dishService.getDishById(id);
+        if (dto == null) {
+            log.debug("Admin tried to update a dish with id {} but it was not found", id);
+            return "redirect:/admin/orders";
+        }
+        model.addAttribute(DISH_ATTR, dto);
+        model.addAttribute(CATEGORIES_ATTR, CategoryDto.values());
+        return PAGE_DISH_UPDATE;
+    }
+
+    // ----------------- helpers -----------------
+
+    private static String normalizeCategory(String category) {
+        if (category == null) return DEFAULT_FILTER_CATEGORY;
+        return category.replace("\"", "").trim().toLowerCase();
+    }
+
+    private static List<MultipartFile> normalizeFiles(List<MultipartFile> files) {
+        if (files == null) return new ArrayList<>();
+        return files.stream()
+                .filter(Objects::nonNull)
+                .filter(f -> !f.isEmpty())
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private static List<String> toSafeFileNames(List<MultipartFile> files) {
+        List<String> names = new ArrayList<>(files.size());
+        for (MultipartFile f : files) {
+            String name = StringUtils.cleanPath(Objects.requireNonNullElse(f.getOriginalFilename(), ""));
+            if (!name.isBlank()) names.add(name);
+        }
+        return names;
+    }
+
+    private static int clampIndex(int idx, int size) {
+        if (size <= 0) return 0;
+        if (idx < 0) return 0;
+        if (idx >= size) return size - 1;
+        return idx;
+    }
+
+    private static String buildRedirect(int pageNo, String sortField, String sortDir, int pageSize, String filterCategory) {
+        return UriComponentsBuilder.fromPath("/admin/dishes/page/{pageNo}")
                 .queryParam(SORT_FIELD_PARAM, sortField)
                 .queryParam(SORT_DIR_PARAM, sortDir)
                 .queryParam(PAGE_SIZE_PARAM, pageSize)
                 .queryParam(FILTER_CATEGORY_PARAM, filterCategory)
                 .buildAndExpand(pageNo)
                 .toUriString();
-        return "redirect:" + redirectLink;
-    }
-
-    @PutMapping("/{id}")
-    public String updateDish(
-            @Valid @ModelAttribute(DISH_ATTRIBUTE_NAME) DishCreationDto dishCreationDto,
-            BindingResult bindingResult,
-            @RequestParam(value = IMAGE_PARAM, required = false) java.util.List<MultipartFile> multipartFiles,
-            @RequestParam(value = "existingImages", required = false) java.util.List<String> existingImages,
-            @RequestParam(value = "updateImages", required = false) java.util.List<MultipartFile> updateImages,
-            @RequestParam(value = "deleteImages", required = false) java.util.List<String> deleteImages,
-            @RequestParam(value = PRIMARY_INDEX_PARAM, defaultValue = "0") int primaryIndex,
-            Model model
-    ) {
-        long dishId = dishCreationDto.getId();
-
-        if (bindingResult.hasErrors()) {
-
-            model.addAttribute(DISH_ATTRIBUTE_NAME, dishCreationDto);
-            model.addAttribute("categories", CategoryDto.values());
-            return DISH_UPDATE_PAGE;
-        }
-
-        if (multipartFiles != null) {
-            multipartFiles.removeIf(MultipartFile::isEmpty);
-        } else {
-            multipartFiles = new java.util.ArrayList<>();
-        }
-
-        if (updateImages == null) {
-            updateImages = new java.util.ArrayList<>();
-        }
-
-        java.util.List<String> originalExisting = existingImages == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(existingImages);
-
-        if (existingImages == null) {
-            existingImages = new java.util.ArrayList<>();
-        }
-
-        if (deleteImages != null) {
-            existingImages.removeAll(deleteImages);
-        }
-
-        java.util.Map<String, MultipartFile> replacements = new java.util.HashMap<>();
-        for (int i = 0; i < originalExisting.size() && i < updateImages.size(); i++) {
-            MultipartFile file = updateImages.get(i);
-            if (!file.isEmpty()) {
-                replacements.put(originalExisting.get(i), file);
-            }
-        }
-
-        java.util.List<String> newFileNames = new java.util.ArrayList<>();
-        for (MultipartFile file : multipartFiles) {
-            newFileNames.add(StringUtils.cleanPath(file.getOriginalFilename()));
-        }
-
-        java.util.List<String> allNames = new java.util.ArrayList<>(existingImages);
-        allNames.addAll(newFileNames);
-
-        if (allNames.isEmpty()) {
-            dishCreationDto.setImageFileName(null);
-            dishCreationDto.setGalleryImageFileNames(java.util.List.of());
-        } else {
-            if (primaryIndex < 0 || primaryIndex >= allNames.size()) {
-                primaryIndex = 0;
-            }
-            String primaryName = allNames.get(primaryIndex);
-            dishCreationDto.setImageFileName(primaryName);
-            allNames.remove(primaryName);
-            dishCreationDto.setGalleryImageFileNames(allNames);
-        }
-
-        dishService.updateWithFiles(dishCreationDto, multipartFiles, replacements, deleteImages);
-
-        return REDIRECT_TO_ADMIN_DISHES;
-    }
-
-    @GetMapping("{id}/update-form")
-    public String returnDishUpdateForm(
-            @PathVariable(value = "id") long id,
-            Model model) {
-        DishResponseDto dishResponseDto = dishService.getDishById(id);
-
-        if (dishResponseDto != null) {
-            model.addAttribute(DISH_ATTRIBUTE_NAME, dishResponseDto);
-        } else {
-            log.debug("Admin tried to update a dish with id {}. But the dish was not found in DB", id);
-            return "redirect:/admin/orders";
-        }
-        model.addAttribute("categories", CategoryDto.values());
-        return DISH_UPDATE_PAGE;
     }
 }

@@ -1,6 +1,7 @@
 package com.exampleepam.restaurant.dto.dish;
 
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,7 +24,8 @@ public class DishResponseDto {
   private CategoryDto category;
   private BigDecimal price;
   private String imageFileName;
-  private java.util.List<String> galleryImageFileNames;
+  private List<String> galleryImageFileNames;
+  private List<IngredientQuantityDto> ingredients;
   private double averageRating;
   private long reviewCount;
 
@@ -31,12 +33,11 @@ public class DishResponseDto {
     if (imageFileName == null || id == 0) {
       return null;
     }
-
     return "/dish-images/" + id + "/" + imageFileName;
   }
 
-  public java.util.List<String> getAllImageFileNames() {
-    java.util.List<String> result = new java.util.ArrayList<>();
+  public List<String> getAllImageFileNames() {
+    List<String> result = new java.util.ArrayList<>();
     if (imageFileName != null) {
       result.add(imageFileName);
     }
@@ -50,8 +51,8 @@ public class DishResponseDto {
     return result;
   }
 
-  public java.util.List<String> getImagePaths() {
-    java.util.List<String> list = new java.util.ArrayList<>();
+  public List<String> getImagePaths() {
+    List<String> list = new java.util.ArrayList<>();
     for (String name : getAllImageFileNames()) {
       list.add("/dish-images/" + id + "/" + name);
     }
@@ -61,5 +62,4 @@ public class DishResponseDto {
   public String getImagePathsString() {
     return String.join(",", getImagePaths());
   }
-
 }

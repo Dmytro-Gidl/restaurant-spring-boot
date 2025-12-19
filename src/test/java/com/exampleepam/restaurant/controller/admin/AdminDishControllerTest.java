@@ -110,7 +110,15 @@ public class AdminDishControllerTest {
     void saveNewDishValidationFail() throws Exception {
         DishCreationDto invalidDto = new DishCreationDto();
 
+        MockMultipartFile emptyFile = new MockMultipartFile(
+                "images",
+                "empty.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[0]
+        );
+
         mockMvc.perform(MockMvcRequestBuilders.multipart("/admin/dishes")
+                        .file(emptyFile)
                         .flashAttr("dish", invalidDto)
                         .with(csrf()))
                 .andExpect(status().isOk())

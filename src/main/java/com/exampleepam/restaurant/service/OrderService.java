@@ -16,6 +16,9 @@ import com.exampleepam.restaurant.repository.OrderRepository;
 import com.exampleepam.restaurant.repository.UserRepository;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.util.ServiceUtil;
+import com.exampleepam.restaurant.service.DishForecastService;
+import com.exampleepam.restaurant.service.IngredientForecastService;
+import com.exampleepam.restaurant.service.forecast.ForecastModel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -51,10 +54,16 @@ public class OrderService {
     private final DishRepository dishRepository;
     private final UserService userService;
     private final ServiceUtil serviceUtil;
+    private final DishForecastService dishForecastService;
+    private final IngredientForecastService ingredientForecastService;
+    private final List<ForecastModel> models;
 
     public OrderService(OrderRepository orderRepository, OrderMapper orderMapper,
                         UserRepository userRepository, DishRepository dishRepository,
-                        UserService userService, ServiceUtil serviceUtil) {
+                        UserService userService, ServiceUtil serviceUtil,
+                        DishForecastService dishForecastService,
+                        IngredientForecastService ingredientForecastService,
+                        List<ForecastModel> models) {
 
         this.orderRepository = orderRepository;
         this.orderMapper = orderMapper;
@@ -62,6 +71,9 @@ public class OrderService {
         this.dishRepository = dishRepository;
         this.userService = userService;
         this.serviceUtil = serviceUtil;
+        this.dishForecastService = dishForecastService;
+        this.ingredientForecastService = ingredientForecastService;
+        this.models = models;
     }
 
     /**
@@ -218,6 +230,12 @@ public class OrderService {
         Status nextStatus = Status.values()[status.ordinal() + 1];
         order.setStatus(nextStatus);
         order.setUpdateDateTime(LocalDateTime.now());
+        if (nextStatus == Status.COMPLETED) {
+            for (ForecastModel m : models) {
+                dishForecastService.getDishForecasts(7, null, null, m.getName(), Pageable.unpaged(), true);
+                ingredientForecastService.getIngredientForecasts(7, null, null, m.getName(), Pageable.unpaged(), true);
+            }
+        }
     }
 
     private void throwExceptionIfMoneyInsufficient(User user, Order order) {
