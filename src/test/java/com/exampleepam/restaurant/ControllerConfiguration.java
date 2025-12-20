@@ -2,6 +2,10 @@ package com.exampleepam.restaurant;
 
 import com.exampleepam.restaurant.entity.User;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
+import com.exampleepam.restaurant.security.CustomAuthenticationSuccessHandler;
+import com.exampleepam.restaurant.service.RecommendationService;
+import com.exampleepam.restaurant.service.UserService;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -29,6 +33,19 @@ public class ControllerConfiguration {
                             .filter(u -> u.getEmail().equals(s)).findAny()
                             .orElse(basicUser));
         };
+    }
+
+    @Bean
+    @Primary
+    public RecommendationService recommendationService() {
+        return Mockito.mock(RecommendationService.class);
+    }
+
+    @Bean
+    @Primary
+    public CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler(
+            UserService userService) {
+        return new CustomAuthenticationSuccessHandler(userService);
     }
 
 
