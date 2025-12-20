@@ -2,6 +2,7 @@ package com.exampleepam.restaurant.forecast;
 
 import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.entity.Dish;
+import com.exampleepam.restaurant.entity.Review;
 import com.exampleepam.restaurant.entity.Status;
 import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
@@ -38,7 +39,11 @@ public class RecommendationServiceTest {
                 factorizationService, ratingMatrixBuilder, collaborativePredictor, categoryFallback);
 
         RatingData data = new RatingData(Map.of(2L, Map.of(1L, 1.0)), Map.of(2L, 1.0));
-        when(reviewRepository.findAllWithUserAndDish()).thenReturn(List.of());
+        Dish reviewedDish = new Dish();
+        reviewedDish.setId(1L);
+        Review review = new Review();
+        review.setDish(reviewedDish);
+        when(reviewRepository.findAllWithUserAndDish()).thenReturn(List.of(review));
         when(orderRepository.findByStatus(Status.COMPLETED)).thenReturn(List.of());
         when(ratingMatrixBuilder.build(anyList(), anyList())).thenReturn(data);
         when(collaborativePredictor.predict(eq(1L), eq(data))).thenReturn(Map.of(1L, 4.0));
@@ -72,7 +77,11 @@ public class RecommendationServiceTest {
                 factorizationService, ratingMatrixBuilder, collaborativePredictor, categoryFallback);
 
         RatingData data = new RatingData(Map.of(), Map.of());
-        when(reviewRepository.findAllWithUserAndDish()).thenReturn(List.of());
+        Dish reviewedDish = new Dish();
+        reviewedDish.setId(1L);
+        Review review = new Review();
+        review.setDish(reviewedDish);
+        when(reviewRepository.findAllWithUserAndDish()).thenReturn(List.of(review));
         when(orderRepository.findByStatus(Status.COMPLETED)).thenReturn(List.of());
         when(ratingMatrixBuilder.build(anyList(), anyList())).thenReturn(data);
         when(collaborativePredictor.predict(eq(1L), eq(data))).thenReturn(Map.of());
