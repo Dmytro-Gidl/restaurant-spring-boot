@@ -37,7 +37,6 @@ public class TestData {
 
   }
 
-  // Basic Users
   public static User getAdminUser() {
     return new User(2, "admin", ADMIN_EMAIL,
         "pas", BigDecimal.ZERO, Role.ADMIN, new ArrayList<>(), true);
