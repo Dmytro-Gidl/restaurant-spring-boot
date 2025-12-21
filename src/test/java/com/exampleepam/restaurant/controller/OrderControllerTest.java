@@ -60,7 +60,7 @@ public class OrderControllerTest {
                         .with(csrf());
 
         mockMvc.perform(mockRequest)
-                .andExpect(MockMvcResultMatchers.redirectedUrl("/orders/history"));
+                .andExpect(MockMvcResultMatchers.redirectedUrl("/orders/history?clearCart"));
         AuthenticatedUser authenticatedUser = getBasicUserDetails();
         Mockito.verify(orderService, times(1)).saveOrder(orderCreation, authenticatedUser);
     }

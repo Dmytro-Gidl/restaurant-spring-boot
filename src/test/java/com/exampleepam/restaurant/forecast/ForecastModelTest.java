@@ -1,144 +1,209 @@
 package com.exampleepam.restaurant.forecast;
 
-import com.exampleepam.restaurant.service.forecast.HoltWintersModel;
 import com.exampleepam.restaurant.service.forecast.ArimaModel;
-import com.exampleepam.restaurant.service.forecast.ForecastResult;
-import com.exampleepam.restaurant.service.forecast.MonthlyForecaster;
-import com.exampleepam.restaurant.service.forecast.HistoryCollector;
 import com.exampleepam.restaurant.service.forecast.ForecastEvaluator;
-import com.exampleepam.restaurant.service.forecast.ForecastModel;
-import com.exampleepam.restaurant.service.forecast.MonthlyResult;
-import com.exampleepam.restaurant.service.forecast.ScaleData;
-import com.exampleepam.restaurant.repository.DishForecastRepository;
-import com.exampleepam.restaurant.entity.Dish;
-
-import org.mockito.Mockito;
-import java.util.List;
+import com.exampleepam.restaurant.service.forecast.ForecastResult;
+import com.exampleepam.restaurant.service.forecast.HoltWintersModel;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ForecastModelTest {
+@DisplayName("Forecast models")
+class ForecastModelTest {
 
-    @Test
-    void holtHandlesEmptyHistory() {
-        HoltWintersModel model = new HoltWintersModel(12);
-        ForecastResult r = model.forecast(List.of(), 3);
-        assertEquals(0, r.getForecasts().size());
+    private static final int FORECAST_HORIZON_1 = 1;
+    private static final int FORECAST_HORIZON_3 = 3;
+    private static final int FORECAST_HORIZON_4 = 4;
+
+    private static final int SEASON_PERIOD_2 = 2;
+    private static final int SEASON_PERIOD_4 = 4;
+    private static final int SEASON_PERIOD_12 = 12;
+
+    private static final double EXACT_TOLERANCE = 1e-9;
+    private static final double SEASONAL_TOLERANCE = 2.0;
+
+    // ---- helpers ----
+    private static List<Integer> history(int... values) {
+        return java.util.Arrays.stream(values).boxed().toList();
     }
 
-    @Test
-    void arimaProjectsTrend() {
-        ArimaModel model = new ArimaModel();
-        ForecastResult r = model.forecast(List.of(1,2,3,4,5), 1);
-        assertTrue(r.getForecasts().get(0) > 4.5);
-    }
 
-    @Test
-    void arimaHandlesFlatSeries() {
-        ArimaModel model = new ArimaModel();
-        ForecastResult r = model.forecast(List.of(5,5,5,5), 1);
-        assertEquals(5, Math.round(r.getForecasts().get(0)));
-    }
+    @Nested
+    @DisplayName("Holt-Winters (triple exponential smoothing)")
+    class HoltWinters {
 
-    @Test
-    void arimaRepeatsSingleObservation() {
-        ArimaModel model = new ArimaModel();
-        ForecastResult r = model.forecast(List.of(7), 3);
-        assertEquals(3, r.getForecasts().size());
-        for (double v : r.getForecasts()) {
-            assertEquals(7.0, v);
+        @Test
+        @DisplayName("returns empty forecast when history is empty")
+        void returns_emptyForecast_whenHistoryIsEmpty() {
+            HoltWintersModel model = new HoltWintersModel(SEASON_PERIOD_12);
+
+            ForecastResult r = model.forecast(List.of(), FORECAST_HORIZON_3);
+
+            assertNotNull(r.getForecasts());
+            assertTrue(r.getForecasts().isEmpty(), "Expected empty forecast list");
+        }
+
+        @Test
+        @DisplayName("repeats last observation when history is shorter than two full seasons")
+        void repeats_lastObservation_whenHistoryTooShortForSeasonality() {
+            HoltWintersModel model = new HoltWintersModel(SEASON_PERIOD_12);
+            List<Integer> shortHistory = history(3, 4, 5, 6); // << 2 * season period
+
+            ForecastResult r = model.forecast(shortHistory, FORECAST_HORIZON_3);
+
+            assertEquals(FORECAST_HORIZON_3, r.getForecasts().size());
+            double last = shortHistory.get(shortHistory.size() - 1);
+            r.getForecasts().forEach(v -> assertEquals(last, v, EXACT_TOLERANCE));
+        }
+
+        @Test
+        @DisplayName("tracks a repeating seasonal pattern (period = 2)")
+        void tracks_repeatingSeasonalPattern() {
+            HoltWintersModel model = new HoltWintersModel(SEASON_PERIOD_2);
+            List<Integer> repeating = history(10, 20, 10, 20, 10, 20, 10, 20);
+
+            ForecastResult r = model.forecast(repeating, FORECAST_HORIZON_4);
+
+            assertEquals(FORECAST_HORIZON_4, r.getForecasts().size());
+            assertEquals(10.0, r.getForecasts().get(0), SEASONAL_TOLERANCE);
+            assertEquals(20.0, r.getForecasts().get(1), SEASONAL_TOLERANCE);
+            assertEquals(10.0, r.getForecasts().get(2), SEASONAL_TOLERANCE);
+            assertEquals(20.0, r.getForecasts().get(3), SEASONAL_TOLERANCE);
+
+            assertConfidenceIntervalsBracketForecast(r);
+        }
+
+        @Test
+        @DisplayName("carries trend + seasonality forward (period = 4)")
+        void carries_trendAndSeasonality_forward() {
+            HoltWintersModel model = new HoltWintersModel(SEASON_PERIOD_4);
+            List<Integer> history = history(
+                    100, 120, 110, 130,
+                    110, 130, 120, 140,
+                    120, 140, 130, 150
+            );
+
+            ForecastResult r = model.forecast(history, FORECAST_HORIZON_4);
+
+            assertEquals(FORECAST_HORIZON_4, r.getForecasts().size());
+            assertTrue(r.getForecasts().get(0) < r.getForecasts().get(1), "Expected rising within-season trend");
+            assertTrue(r.getForecasts().get(2) < r.getForecasts().get(3), "Expected rising within-season trend");
+            assertTrue(r.getForecasts().get(3) >= 150.0, "Expected continuation at/above last peak");
+
+            assertConfidenceIntervalsBracketForecast(r);
+        }
+
+        @Test
+        @DisplayName("never returns negative forecasts or confidence bounds")
+        void never_returns_negativeValues() {
+            HoltWintersModel model = new HoltWintersModel(SEASON_PERIOD_2);
+            List<Integer> history = history(10, 0, 8, 0, 6, 0, 4, 0);
+
+            ForecastResult r = model.forecast(history, FORECAST_HORIZON_4);
+
+            assertEquals(FORECAST_HORIZON_4, r.getForecasts().size());
+            r.getForecasts().forEach(v -> assertTrue(v >= 0.0, "Forecast must be non-negative"));
+            r.getLower().forEach(v -> assertTrue(v >= 0.0, "Lower CI must be non-negative"));
+            r.getUpper().forEach(v -> assertTrue(v >= 0.0, "Upper CI must be non-negative"));
+
+            assertConfidenceIntervalsBracketForecast(r);
         }
     }
 
-//    @Test
-//    void monthlyForecasterTrimsZerosAndFlagsSinglePoint() {
-//        DishForecastRepository repo = Mockito.mock(DishForecastRepository.class);
-//        MonthlyForecaster forecaster = new MonthlyForecaster(repo);
-//        HistoryCollector.History history = new HistoryCollector.History();
-//        long dishId = 1L;
-//        java.time.YearMonth ym = java.time.YearMonth.now();
-//        history.monthlyTotals.put(dishId, java.util.Map.of(ym, 5));
-//        Dish dish = new Dish();
-//        dish.setId(dishId);
-//        ForecastModel stubModel = new ForecastModel() {
-//            @Override public String getName() { return "stub"; }
-//            @Override public ForecastResult forecast(List<Integer> h, int p) { return new ForecastResult(java.util.Collections.nCopies(p, 1.0), List.of(), List.of(),0,0,0); }
-//        };
-//        MonthlyResult result = forecaster.forecast(dish, history, stubModel);
-//        ScaleData scale = result.scale();
-//        assertEquals(0, scale.actual().get(0));
-//        assertEquals(List.of(5), result.modelHistory());
-//        assertTrue(result.singlePoint());
-//    }
+    @Nested
+    @DisplayName("ARIMA (AR(1) with OLS)")
+    class Arima {
 
-    @Test
-    void crossValidateReturnsNaNForSparseHistory() {
-        ForecastEvaluator.Metrics m = ForecastEvaluator.crossValidate(List.of(0, 5, 0), new HoltWintersModel(12), 3);
-        assertTrue(Double.isNaN(m.mape()));
-        assertTrue(Double.isNaN(m.rmse()));
-    }
+        @Test
+        @DisplayName("returns zeros for empty history (size = requested horizon)")
+        void returns_zeros_whenHistoryIsEmpty() {
+            ArimaModel model = new ArimaModel();
 
-    @Test
-    void holtWintersRepeatsSeasonalPattern() {
-        HoltWintersModel model = new HoltWintersModel(2);
-        List<Integer> history = List.of(10, 20, 10, 20, 10, 20, 10, 20);
-        ForecastResult result = model.forecast(history, 4);
+            ForecastResult r = model.forecast(List.of(), FORECAST_HORIZON_3);
 
-        assertEquals(4, result.getForecasts().size());
-        assertEquals(10.0, result.getForecasts().get(0), 2.0);
-        assertEquals(20.0, result.getForecasts().get(1), 2.0);
-        assertEquals(10.0, result.getForecasts().get(2), 2.0);
-        assertEquals(20.0, result.getForecasts().get(3), 2.0);
-    }
+            assertEquals(FORECAST_HORIZON_3, r.getForecasts().size());
+            r.getForecasts().forEach(v -> assertEquals(0.0, v, EXACT_TOLERANCE));
+            assertConfidenceIntervalsBracketForecast(r);
+        }
 
-    @Test
-    void holtWintersCarriesTrendAndSeasonality() {
-        HoltWintersModel model = new HoltWintersModel(4);
-        List<Integer> history = List.of(
-                100, 120, 110, 130,
-                110, 130, 120, 140,
-                120, 140, 130, 150);
+        @Test
+        @DisplayName("repeats single observation for all forecast steps")
+        void repeats_singleObservation() {
+            ArimaModel model = new ArimaModel();
+            int observedValue = 7;
 
-        ForecastResult result = model.forecast(history, 4);
+            ForecastResult r = model.forecast(history(observedValue), FORECAST_HORIZON_3);
 
-        assertEquals(4, result.getForecasts().size());
-        assertTrue(result.getForecasts().get(0) < result.getForecasts().get(1));
-        assertTrue(result.getForecasts().get(2) < result.getForecasts().get(3));
-        assertTrue(result.getForecasts().get(3) >= 150.0);
-    }
+            assertEquals(FORECAST_HORIZON_3, r.getForecasts().size());
+            r.getForecasts().forEach(v -> assertEquals(observedValue, v, EXACT_TOLERANCE));
+            assertConfidenceIntervalsBracketForecast(r);
+        }
 
-    @Test
-    void holtWintersClampsNegativeForecasts() {
-        HoltWintersModel model = new HoltWintersModel(2);
-        List<Integer> history = List.of(10, 0, 8, 0, 6, 0, 4, 0);
+        @Test
+        @DisplayName("keeps flat series flat")
+        void keeps_flatSeries_flat() {
+            ArimaModel model = new ArimaModel();
 
-        ForecastResult result = model.forecast(history, 4);
+            ForecastResult r = model.forecast(history(5, 5, 5, 5), FORECAST_HORIZON_1);
 
-        assertEquals(4, result.getForecasts().size());
-        for (double forecast : result.getForecasts()) {
-            assertTrue(forecast >= 0);
+            assertEquals(FORECAST_HORIZON_1, r.getForecasts().size());
+            assertEquals(5.0, r.getForecasts().get(0), EXACT_TOLERANCE);
+            assertConfidenceIntervalsBracketForecast(r);
+        }
+
+        @Test
+        @DisplayName("matches a perfect AR(1) process: y(t) = 0.5 * y(t-1)")
+        void matches_perfect_ar1_process() {
+            ArimaModel model = new ArimaModel();
+
+            // Perfect AR(1): 16 -> 8 -> 4 -> 2 -> 1
+            List<Integer> ar1 = history(16, 8, 4, 2, 1);
+
+            ForecastResult r = model.forecast(ar1, FORECAST_HORIZON_3);
+
+            assertEquals(FORECAST_HORIZON_3, r.getForecasts().size());
+            assertEquals(0.5, r.getForecasts().get(0), EXACT_TOLERANCE);
+            assertEquals(0.25, r.getForecasts().get(1), EXACT_TOLERANCE);
+            assertEquals(0.125, r.getForecasts().get(2), EXACT_TOLERANCE);
+
+            assertConfidenceIntervalsBracketForecast(r);
         }
     }
 
-//    @Test
-//    void monthlyForecasterKeepsActualsAndAppendsForecasts() {
-//        DishForecastRepository repo = Mockito.mock(DishForecastRepository.class);
-//        MonthlyForecaster forecaster = new MonthlyForecaster(repo);
-//        HistoryCollector.History history = new HistoryCollector.History();
-//        long dishId = 2L;
-//        java.time.YearMonth ym = java.time.YearMonth.now();
-//        history.monthlyTotals.put(dishId, java.util.Map.of(ym, 4));
-//        Dish dish = new Dish();
-//        dish.setId(dishId);
-//        ForecastModel stubModel = new ForecastModel() {
-//            @Override public String getName() { return "stub"; }
-//            @Override public ForecastResult forecast(List<Integer> h, int p) { return new ForecastResult(java.util.Collections.nCopies(p, 2.0), List.of(), List.of(),0,0,0); }
-//        };
-//        MonthlyResult result = forecaster.forecast(dish, history, stubModel);
-//        ScaleData scale = result.scale();
-//        int historyIndex = scale.actual().indexOf(4);
-//        assertEquals(4, scale.actual().get(historyIndex));
-//        assertNull(scale.forecast().get(historyIndex));
-//        assertEquals(2, scale.forecast().get(historyIndex + 1));
-//    }
+    @Test
+    @DisplayName("cross-validation returns NaN metrics for sparse / mostly-zero history")
+    void crossValidation_returnsNaN_forSparseHistory() {
+        List<Integer> sparse = history(0, 5, 0);
+        HoltWintersModel model = new HoltWintersModel(SEASON_PERIOD_12);
+
+        ForecastEvaluator.Metrics m = ForecastEvaluator.crossValidate(sparse, model, FORECAST_HORIZON_3);
+
+        assertTrue(Double.isNaN(m.mape()), "MAPE should be NaN for sparse history");
+        assertTrue(Double.isNaN(m.rmse()), "RMSE should be NaN for sparse history");
+    }
+
+    private static void assertSizesMatch(String label, List<?> a, List<?> b) {
+        assertEquals(a.size(), b.size(), label + " sizes must match");
+    }
+
+    private static void assertConfidenceIntervalsBracketForecast(ForecastResult r) {
+        assertNotNull(r.getForecasts(), "Forecasts must not be null");
+        assertNotNull(r.getLower(), "Lower CI must not be null");
+        assertNotNull(r.getUpper(), "Upper CI must not be null");
+
+        assertSizesMatch("forecast vs lower", r.getForecasts(), r.getLower());
+        assertSizesMatch("forecast vs upper", r.getForecasts(), r.getUpper());
+
+        for (int i = 0; i < r.getForecasts().size(); i++) {
+            double f = r.getForecasts().get(i);
+            double lo = r.getLower().get(i);
+            double hi = r.getUpper().get(i);
+            assertTrue(lo <= f, "Lower CI must be <= forecast at index " + i);
+            assertTrue(f <= hi, "Forecast must be <= upper CI at index " + i);
+        }
+    }
 }

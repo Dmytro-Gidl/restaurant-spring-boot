@@ -3,6 +3,7 @@ package com.exampleepam.restaurant.controller.admin;
 import com.exampleepam.restaurant.ControllerConfiguration;
 import com.exampleepam.restaurant.controller.DishController;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
+import com.exampleepam.restaurant.security.CustomAuthenticationSuccessHandler;
 import com.exampleepam.restaurant.security.MyUserDetailsService;
 import com.exampleepam.restaurant.service.OrderService;
 import com.exampleepam.restaurant.service.UserService;
@@ -39,6 +40,8 @@ public class AdminOrderControllerTest {
     private UserService userService;
     @MockBean
     MyUserDetailsService myUserDetailsService;
+    @MockBean
+    CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
     @Autowired
     public AdminOrderControllerTest(MockMvc mockMvc) {
@@ -131,4 +134,3 @@ public class AdminOrderControllerTest {
 
     }
 }
-

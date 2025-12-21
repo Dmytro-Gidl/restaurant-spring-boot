@@ -118,7 +118,7 @@ public class RecommendationService {
 
         // Fetch, map to DTOs, decorate, and final sort by blended score + tie-breakers
         final List<Dish> dishes = dishRepository.findAllById(topIds);
-        final List<DishResponseDto> dtos = dishMapper.toDishResponseDtoList(dishes);
+        final List<DishResponseDto> dtos = new ArrayList<>(dishMapper.toDishResponseDtoList(dishes));
         assignAverageRatings(dtos);
         assignReviewCounts(dtos);
 
