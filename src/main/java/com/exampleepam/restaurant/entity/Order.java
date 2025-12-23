@@ -34,7 +34,7 @@ import java.util.List;
 @ToString
 public class Order extends AbstractBaseEntity {
 
-    @Column(length = 50)
+    @Column(length = 100)
     private String address;
     private LocalDateTime creationDateTime;
     private LocalDateTime updateDateTime;
