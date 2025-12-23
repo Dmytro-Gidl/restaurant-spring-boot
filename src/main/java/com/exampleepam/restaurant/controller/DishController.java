@@ -4,7 +4,7 @@ import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.dto.order.OrderCreationDto;
 import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.DishService;
-import com.exampleepam.restaurant.service.RecommendationService;
+import com.exampleepam.restaurant.service.recommendation.RecommendationService;
 import com.exampleepam.restaurant.entity.paging.Paged;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

@@ -1,5 +1,7 @@
 package com.exampleepam.restaurant.service.forecast;
 
+import org.springframework.stereotype.Component;
+
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -7,79 +9,101 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.stereotype.Component;
-
 @Component
 public class DailyForecaster {
+
+    private static final int PAST_DAYS = 30;
 
     public ScaleData forecast(long id,
                               HistoryCollector.History history,
                               LocalDate today,
                               Map<YearMonth, Integer> monthForecastMap) {
-        Map<LocalDate, Integer> dishDaily = history.dailyTotals.getOrDefault(id, Map.of());
-        YearMonth currentMonth = YearMonth.now();
-        List<String> labels = new ArrayList<>();
-        List<Integer> actual = new ArrayList<>();
-        List<Integer> forecast = new ArrayList<>();
 
-        for (int i = -30; i <= 0; i++) {
+        Map<LocalDate, Integer> dishDaily = history.dailyTotals.getOrDefault(id, Map.of());
+
+        // Past window: today-30..today
+        int pastSize = PAST_DAYS + 1;
+
+        // Horizon: tomorrow..end of next month
+        LocalDate startFuture = today.plusDays(1);
+        LocalDate horizonEnd = YearMonth.from(today.plusMonths(1)).atEndOfMonth();
+        int futureSize = (startFuture.isAfter(horizonEnd)) ? 0 : (int) (horizonEnd.toEpochDay() - startFuture.toEpochDay() + 1);
+
+        List<String> labels = new ArrayList<>(pastSize + futureSize);
+        List<Integer> actual = new ArrayList<>(pastSize + futureSize);
+        List<Integer> forecast = new ArrayList<>(pastSize + futureSize);
+
+        for (int i = -PAST_DAYS; i <= 0; i++) {
             LocalDate day = today.plusDays(i);
             labels.add(day.toString());
             actual.add(dishDaily.getOrDefault(day, 0));
             forecast.add(null);
         }
 
-        Map<YearMonth, Integer> remainingMonthly = new HashMap<>();
-        Map<YearMonth, Integer> allocatedDays = new HashMap<>();
-        LocalDate futureDay = today.plusDays(1);
-        LocalDate horizonEnd = YearMonth.from(today.plusMonths(1)).atEndOfMonth();
-        while (!futureDay.isAfter(horizonEnd)) {
-            YearMonth ym = YearMonth.from(futureDay);
+        // Precompute actual sums per month up to "today"
+        Map<YearMonth, Integer> actualToDateByMonth = sumActualToDateByMonth(dishDaily, today);
+
+        // Allocate for each month in horizon (could be current month remainder + full next month)
+        LocalDate d = startFuture;
+        while (!d.isAfter(horizonEnd)) {
+            YearMonth ym = YearMonth.from(d);
+
+            LocalDate monthStart = ym.atDay(1);
+            LocalDate monthEnd = ym.atEndOfMonth();
+
+            LocalDate allocStart = d; // starts at tomorrow for first month, then 1st for next month
+            LocalDate allocEnd = monthEnd.isBefore(horizonEnd) ? monthEnd : horizonEnd;
+
             int monthPred = monthForecastMap.getOrDefault(ym, 0);
-            remainingMonthly.computeIfAbsent(ym, m -> {
-                int actualSoFar = dishDaily.entrySet().stream()
-                        .filter(e -> YearMonth.from(e.getKey()).equals(ym) && !e.getKey().isAfter(today))
-                        .mapToInt(Map.Entry::getValue)
-                        .sum();
-                return Math.max(0, monthPred - actualSoFar);
-            });
-            allocatedDays.putIfAbsent(ym, ym.equals(currentMonth) ? today.getDayOfMonth() : 0);
-            int usedDays = allocatedDays.get(ym);
-            int daysInMonth = ym.lengthOfMonth();
-            int remainingDays = daysInMonth - usedDays;
-            int remainingQty = remainingMonthly.get(ym);
-            int base = remainingDays > 0 ? remainingQty / remainingDays : 0;
-            int rem = remainingDays > 0 ? remainingQty % remainingDays : 0;
-            int dayIndex = usedDays - (ym.equals(currentMonth) ? today.getDayOfMonth() : 0);
-            int val = base + (dayIndex < rem ? 1 : 0);
-            remainingMonthly.put(ym, remainingQty - val);
-            allocatedDays.put(ym, usedDays + 1);
-            labels.add(futureDay.toString());
-            actual.add(null);
-            forecast.add(val);
-            futureDay = futureDay.plusDays(1);
+            int actualSoFar = actualToDateByMonth.getOrDefault(ym, 0);
+            int remainingQty = Math.max(0, monthPred - actualSoFar);
+
+            int days = (int) (allocEnd.toEpochDay() - allocStart.toEpochDay() + 1);
+            allocateEvenly(allocStart, days, remainingQty, labels, actual, forecast);
+
+            d = allocEnd.plusDays(1);
         }
-        reconcileDaily(monthForecastMap, labels, forecast);
+
         return new ScaleData(labels, actual, forecast);
     }
 
-    private void reconcileDaily(Map<YearMonth, Integer> monthForecastMap, List<String> labels, List<Integer> forecast) {
+    private static Map<YearMonth, Integer> sumActualToDateByMonth(Map<LocalDate, Integer> dishDaily, LocalDate today) {
         Map<YearMonth, Integer> sums = new HashMap<>();
-        for (int i = 0; i < labels.size(); i++) {
-            Integer val = forecast.get(i);
-            if (val == null) continue;
-            YearMonth ym = YearMonth.parse(labels.get(i).substring(0,7));
-            sums.merge(ym, val, Integer::sum);
+        for (Map.Entry<LocalDate, Integer> e : dishDaily.entrySet()) {
+            LocalDate day = e.getKey();
+            if (day == null || day.isAfter(today)) continue;
+
+            int v = e.getValue() == null ? 0 : e.getValue();
+            if (v == 0) continue;
+
+            sums.merge(YearMonth.from(day), v, Integer::sum);
         }
-        for (Map.Entry<YearMonth, Integer> e : monthForecastMap.entrySet()) {
-            if (!sums.containsKey(e.getKey())) continue; // skip months outside the horizon
-            int diff = e.getValue() - sums.getOrDefault(e.getKey(), 0);
-            if (diff == 0) continue;
-            for (int i = labels.size() - 1; i >= 0; i--) {
-                if (forecast.get(i) == null) continue;
-                YearMonth ym = YearMonth.parse(labels.get(i).substring(0, 7));
-                if (ym.equals(e.getKey())) { forecast.set(i, forecast.get(i) + diff); break; }
-            }
+        return sums;
+    }
+
+    /**
+     * Even allocation:
+     * base = total/days, first (total%days) days get +1.
+     * Guarantees the sum equals total and values are non-negative.
+     */
+    private static void allocateEvenly(LocalDate startDay,
+                                       int days,
+                                       int total,
+                                       List<String> labels,
+                                       List<Integer> actual,
+                                       List<Integer> forecast) {
+        if (days <= 0) return;
+
+        int base = total / days;
+        int extra = total % days;
+
+        for (int i = 0; i < days; i++) {
+            LocalDate day = startDay.plusDays(i);
+            int val = base + (i < extra ? 1 : 0);
+
+            labels.add(day.toString());
+            actual.add(null);
+            forecast.add(val); // always >= 0
         }
     }
 }

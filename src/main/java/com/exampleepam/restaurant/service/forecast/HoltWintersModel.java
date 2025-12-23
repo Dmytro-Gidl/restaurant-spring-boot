@@ -156,4 +156,3 @@ public class HoltWintersModel implements ForecastModel {
         return sum / (toExclusive - from);
     }
 }
-

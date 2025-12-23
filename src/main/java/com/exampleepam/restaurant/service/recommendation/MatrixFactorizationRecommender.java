@@ -1,4 +1,4 @@
-package com.exampleepam.restaurant.service;
+package com.exampleepam.restaurant.service.recommendation;
 
 import com.exampleepam.restaurant.entity.Order;
 import com.exampleepam.restaurant.entity.OrderItem;
@@ -15,7 +15,7 @@ import java.util.*;
  * - Hyperparameters are configurable via constructor.
  */
 @Service
-public class FactorizationService {
+public class MatrixFactorizationRecommender {
 
     // Model (published atomically after each train)
     private volatile Map<Long, double[]> userFactors = Collections.emptyMap();
@@ -31,12 +31,12 @@ public class FactorizationService {
     private final double lambda;  // L2 reg
     private final long seed;
 
-    public FactorizationService() {
+    public MatrixFactorizationRecommender() {
         // Sensible defaults; tune if needed
         this(8, 25, 0.02, 0.05, 0L);
     }
 
-    public FactorizationService(int factors, int epochs, double alpha, double lambda, long seed) {
+    public MatrixFactorizationRecommender(int factors, int epochs, double alpha, double lambda, long seed) {
         if (factors <= 0) throw new IllegalArgumentException("factors must be > 0");
         if (epochs <= 0) throw new IllegalArgumentException("epochs must be > 0");
         if (alpha <= 0) throw new IllegalArgumentException("alpha must be > 0");

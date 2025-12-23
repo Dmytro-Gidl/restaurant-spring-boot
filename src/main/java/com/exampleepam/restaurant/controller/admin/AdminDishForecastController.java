@@ -2,9 +2,9 @@ package com.exampleepam.restaurant.controller.admin;
 
 import com.exampleepam.restaurant.controller.BaseController;
 import com.exampleepam.restaurant.dto.forecast.DishForecastDto;
-import com.exampleepam.restaurant.service.ForecastSummaryService;
+import com.exampleepam.restaurant.service.forecast.ForecastSummaryService;
 import com.exampleepam.restaurant.entity.Category;
-import com.exampleepam.restaurant.service.DishForecastService;
+import com.exampleepam.restaurant.service.forecast.DishForecastService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

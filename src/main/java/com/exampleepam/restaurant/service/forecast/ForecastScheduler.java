@@ -1,11 +1,9 @@
-package com.exampleepam.restaurant.service;
+package com.exampleepam.restaurant.service.forecast;
 
-import com.exampleepam.restaurant.entity.Category;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import com.exampleepam.restaurant.service.forecast.ForecastModel;
 
 @Component
 public class ForecastScheduler {
@@ -37,4 +35,3 @@ public class ForecastScheduler {
         }
     }
 }
-

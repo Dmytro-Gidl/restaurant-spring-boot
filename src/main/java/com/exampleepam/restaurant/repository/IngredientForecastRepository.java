@@ -10,8 +10,12 @@ import java.util.List;
 
 @Repository
 public interface IngredientForecastRepository extends JpaRepository<IngredientForecast, Long> {
-    List<IngredientForecast> findByIngredientAndDateAfter(Ingredient ingredient, LocalDate date);
-    void deleteByGeneratedAtBefore(LocalDate date);
-    void deleteByIngredientAndGeneratedAt(Ingredient ingredient, LocalDate generatedAt);
-}
 
+    List<IngredientForecast> findByIngredientAndDateAfter(Ingredient ingredient, LocalDate date);
+
+    void deleteByGeneratedAtBefore(LocalDate date);
+
+    void deleteByIngredientAndGeneratedAt(Ingredient ingredient, LocalDate generatedAt);
+
+    void deleteByGeneratedAt(LocalDate generatedAt);
+}

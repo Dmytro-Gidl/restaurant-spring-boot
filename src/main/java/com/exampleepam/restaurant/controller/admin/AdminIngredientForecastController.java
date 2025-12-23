@@ -3,7 +3,7 @@ package com.exampleepam.restaurant.controller.admin;
 import com.exampleepam.restaurant.controller.BaseController;
 import com.exampleepam.restaurant.dto.forecast.IngredientForecastDto;
 import com.exampleepam.restaurant.entity.Category;
-import com.exampleepam.restaurant.service.IngredientForecastService;
+import com.exampleepam.restaurant.service.forecast.IngredientForecastService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

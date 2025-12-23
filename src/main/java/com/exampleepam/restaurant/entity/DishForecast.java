@@ -27,4 +27,3 @@ public class DishForecast extends AbstractBaseEntity {
 
     public void setGeneratedAt(LocalDate generatedAt) { this.generatedAt = generatedAt; }
 }
-
