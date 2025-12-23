@@ -10,7 +10,7 @@ import com.exampleepam.restaurant.security.AuthenticatedUser;
 import com.exampleepam.restaurant.service.DishService;
 import com.exampleepam.restaurant.service.OrderService;
 import com.exampleepam.restaurant.service.UserService;
-import com.exampleepam.restaurant.service.RecommendationService;
+import com.exampleepam.restaurant.service.recommendation.RecommendationService;
 import java.util.Map;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpSession;

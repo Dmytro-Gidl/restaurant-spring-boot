@@ -1,4 +1,4 @@
-package com.exampleepam.restaurant.service;
+package com.exampleepam.restaurant.service.forecast;
 
 import com.exampleepam.restaurant.dto.forecast.DishForecastDto;
 import com.exampleepam.restaurant.dto.forecast.SummaryForecastDto;

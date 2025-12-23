@@ -1,18 +1,9 @@
-package com.exampleepam.restaurant.service;
+package com.exampleepam.restaurant.service.forecast;
 
 import com.exampleepam.restaurant.dto.forecast.DishForecastDto;
 import com.exampleepam.restaurant.entity.Category;
 import com.exampleepam.restaurant.entity.Dish;
 import com.exampleepam.restaurant.repository.DishRepository;
-import com.exampleepam.restaurant.service.forecast.ForecastModel;
-import com.exampleepam.restaurant.service.forecast.ForecastResult;
-import com.exampleepam.restaurant.service.forecast.ForecastEvaluator;
-import com.exampleepam.restaurant.service.forecast.HistoryCollector;
-import com.exampleepam.restaurant.service.forecast.ScaleData;
-import com.exampleepam.restaurant.service.forecast.MonthlyResult;
-import com.exampleepam.restaurant.service.forecast.MonthlyForecaster;
-import com.exampleepam.restaurant.service.forecast.DailyForecaster;
-import com.exampleepam.restaurant.service.forecast.HourlyForecaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 

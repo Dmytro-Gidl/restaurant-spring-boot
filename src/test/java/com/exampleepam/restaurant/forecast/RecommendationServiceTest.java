@@ -8,10 +8,10 @@ import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
 import com.exampleepam.restaurant.repository.OrderRepository;
 import com.exampleepam.restaurant.repository.ReviewRepository;
-import com.exampleepam.restaurant.service.FactorizationService;
-import com.exampleepam.restaurant.service.RecommendationService;
+import com.exampleepam.restaurant.service.recommendation.MatrixFactorizationRecommender;
+import com.exampleepam.restaurant.service.recommendation.RecommendationService;
 import com.exampleepam.restaurant.service.recommendation.CategoryFallback;
-import com.exampleepam.restaurant.service.recommendation.CollaborativePredictor;
+import com.exampleepam.restaurant.service.recommendation.CollaborativeFilteringRecommender;
 import com.exampleepam.restaurant.service.recommendation.RatingMatrixBuilder;
 import com.exampleepam.restaurant.service.recommendation.RatingMatrixBuilder.RatingData;
 import org.junit.jupiter.api.*;
@@ -44,9 +44,9 @@ class RecommendationServiceTest {
     private DishMapper dishMapper;
     private ReviewRepository reviewRepository;
     private OrderRepository orderRepository;
-    private FactorizationService factorizationService;
+    private MatrixFactorizationRecommender matrixFactorizationRecommender;
     private RatingMatrixBuilder ratingMatrixBuilder;
-    private CollaborativePredictor collaborativePredictor;
+    private CollaborativeFilteringRecommender collaborativeFilteringRecommender;
     private CategoryFallback categoryFallback;
 
     private RecommendationService service;
@@ -57,9 +57,9 @@ class RecommendationServiceTest {
         dishMapper = mock(DishMapper.class);
         reviewRepository = mock(ReviewRepository.class);
         orderRepository = mock(OrderRepository.class);
-        factorizationService = mock(FactorizationService.class);
+        matrixFactorizationRecommender = mock(MatrixFactorizationRecommender.class);
         ratingMatrixBuilder = mock(RatingMatrixBuilder.class);
-        collaborativePredictor = mock(CollaborativePredictor.class);
+        collaborativeFilteringRecommender = mock(CollaborativeFilteringRecommender.class);
         categoryFallback = mock(CategoryFallback.class);
 
         service = new RecommendationService(
@@ -67,9 +67,9 @@ class RecommendationServiceTest {
                 dishMapper,
                 reviewRepository,
                 orderRepository,
-                factorizationService,
+                matrixFactorizationRecommender,
                 ratingMatrixBuilder,
-                collaborativePredictor,
+                collaborativeFilteringRecommender,
                 categoryFallback
         );
     }
@@ -83,7 +83,7 @@ class RecommendationServiceTest {
         assertEquals(List.of(), service.getRecommendedDishes(USER_ID, -1));
 
         verifyNoInteractions(reviewRepository, orderRepository, ratingMatrixBuilder,
-                collaborativePredictor, factorizationService, dishRepository, dishMapper, categoryFallback);
+                collaborativeFilteringRecommender, matrixFactorizationRecommender, dishRepository, dishMapper, categoryFallback);
     }
 
     @Test
@@ -95,7 +95,7 @@ class RecommendationServiceTest {
         List<DishResponseDto> result = service.getRecommendedDishes(USER_ID, LIMIT_ONE);
 
         assertTrue(result.isEmpty());
-        verifyNoInteractions(ratingMatrixBuilder, collaborativePredictor, factorizationService, dishRepository, dishMapper, categoryFallback);
+        verifyNoInteractions(ratingMatrixBuilder, collaborativeFilteringRecommender, matrixFactorizationRecommender, dishRepository, dishMapper, categoryFallback);
     }
 
     @Test
@@ -110,7 +110,7 @@ class RecommendationServiceTest {
                 .thenReturn(ratingData(matrixForUser(USER_ID, Map.of())));
 
         // ready -> no training branch :contentReference[oaicite:2]{index=2}
-        when(factorizationService.isReady()).thenReturn(true);
+        when(matrixFactorizationRecommender.isReady()).thenReturn(true);
 
         // dish fetch + mapping path :contentReference[oaicite:3]{index=3}
         stubDishFetchAndMapperIdentity();
@@ -135,10 +135,10 @@ class RecommendationServiceTest {
                 .thenReturn(ratingData(matrixForUser(USER_ID, Map.of(DISH_ID_RATED, 5.0))));
 
         // CF predicts only the already-rated dish
-        when(collaborativePredictor.predict(eq(USER_ID), any(RatingData.class)))
+        when(collaborativeFilteringRecommender.predict(eq(USER_ID), any(RatingData.class)))
                 .thenReturn(Map.of(DISH_ID_RATED, 4.5));
 
-        when(factorizationService.isReady()).thenReturn(true);
+        when(matrixFactorizationRecommender.isReady()).thenReturn(true);
 
         List<DishResponseDto> fallback = List.of(dto(DISH_ID_FALLBACK));
         when(categoryFallback.recommend(eq(USER_ID), eq(Set.of(DISH_ID_RATED)), eq(LIMIT_ONE)))
@@ -166,10 +166,10 @@ class RecommendationServiceTest {
                 .thenReturn(ratingData(matrixForUser(USER_ID, Map.of(DISH_ID_RATED, 5.0))));
 
         // CF tries to recommend rated + candidate
-        when(collaborativePredictor.predict(eq(USER_ID), any(RatingData.class)))
+        when(collaborativeFilteringRecommender.predict(eq(USER_ID), any(RatingData.class)))
                 .thenReturn(Map.of(DISH_ID_RATED, 10.0, DISH_ID_CANDIDATE, 1.0));
 
-        when(factorizationService.isReady()).thenReturn(true);
+        when(matrixFactorizationRecommender.isReady()).thenReturn(true);
 
         stubDishFetchAndMapperIdentity();
 
@@ -190,7 +190,7 @@ class RecommendationServiceTest {
         when(ratingMatrixBuilder.build(anyList(), anyList()))
                 .thenReturn(ratingData(matrixForUser(USER_ID, Map.of())));
 
-        when(factorizationService.isReady()).thenReturn(true);
+        when(matrixFactorizationRecommender.isReady()).thenReturn(true);
 
         stubDishFetchAndMapperIdentity();
 
@@ -219,16 +219,16 @@ class RecommendationServiceTest {
         when(ratingMatrixBuilder.build(anyList(), anyList()))
                 .thenReturn(ratingData(matrixForUser(USER_ID, Map.of())));
 
-        when(factorizationService.isReady()).thenReturn(false);
-        when(factorizationService.rmseOnReviews(anyList())).thenReturn(0.123);
+        when(matrixFactorizationRecommender.isReady()).thenReturn(false);
+        when(matrixFactorizationRecommender.rmseOnReviews(anyList())).thenReturn(0.123);
 
         stubDishFetchAndMapperIdentity();
 
         List<DishResponseDto> result = service.getRecommendedDishes(USER_ID, LIMIT_ONE);
 
         assertEquals(1, result.size());
-        verify(factorizationService).train(anyList(), anyList());
-        verify(factorizationService).rmseOnReviews(anyList());
+        verify(matrixFactorizationRecommender).train(anyList(), anyList());
+        verify(matrixFactorizationRecommender).rmseOnReviews(anyList());
     }
 
     // ------------------ helpers ------------------

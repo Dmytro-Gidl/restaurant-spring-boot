@@ -1,26 +1,5 @@
 package com.exampleepam.restaurant.forecast;
 
-import com.exampleepam.restaurant.dto.forecast.DishForecastDto;
-import com.exampleepam.restaurant.dto.forecast.IngredientForecastDto;
-import com.exampleepam.restaurant.entity.Dish;
-import com.exampleepam.restaurant.entity.DishIngredient;
-import com.exampleepam.restaurant.entity.Ingredient;
-import com.exampleepam.restaurant.entity.MeasureUnit;
-import com.exampleepam.restaurant.repository.DishRepository;
-import com.exampleepam.restaurant.repository.IngredientForecastRepository;
-import com.exampleepam.restaurant.repository.IngredientRepository;
-import com.exampleepam.restaurant.service.DishForecastService;
-import com.exampleepam.restaurant.service.IngredientForecastService;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 public class IngredientForecastServiceTest {
 
 //    @Test

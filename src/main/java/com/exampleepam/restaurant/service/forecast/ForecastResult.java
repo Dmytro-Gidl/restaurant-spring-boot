@@ -36,4 +36,3 @@ public class ForecastResult {
     public List<Double> getLower() { return lower; }
     public List<Double> getUpper() { return upper; }
 }
-

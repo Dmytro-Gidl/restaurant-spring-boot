@@ -1,4 +1,4 @@
-package com.exampleepam.restaurant.service;
+package com.exampleepam.restaurant.service.recommendation;
 
 import com.exampleepam.restaurant.dto.dish.DishResponseDto;
 import com.exampleepam.restaurant.entity.Dish;
@@ -10,9 +10,6 @@ import com.exampleepam.restaurant.mapper.DishMapper;
 import com.exampleepam.restaurant.repository.DishRepository;
 import com.exampleepam.restaurant.repository.OrderRepository;
 import com.exampleepam.restaurant.repository.ReviewRepository;
-import com.exampleepam.restaurant.service.recommendation.CategoryFallback;
-import com.exampleepam.restaurant.service.recommendation.CollaborativePredictor;
-import com.exampleepam.restaurant.service.recommendation.RatingMatrixBuilder;
 import com.exampleepam.restaurant.service.recommendation.RatingMatrixBuilder.RatingData;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,9 +30,9 @@ public class RecommendationService {
     private final DishMapper dishMapper;
     private final ReviewRepository reviewRepository;
     private final OrderRepository orderRepository;
-    private final FactorizationService factorizationService;
+    private final MatrixFactorizationRecommender matrixFactorizationRecommender;
     private final RatingMatrixBuilder ratingMatrixBuilder;
-    private final CollaborativePredictor collaborativePredictor;
+    private final CollaborativeFilteringRecommender collaborativeFilteringRecommender;
     private final CategoryFallback categoryFallback;
 
     @Autowired
@@ -43,17 +40,17 @@ public class RecommendationService {
                                  DishMapper dishMapper,
                                  ReviewRepository reviewRepository,
                                  OrderRepository orderRepository,
-                                 FactorizationService factorizationService,
+                                 MatrixFactorizationRecommender matrixFactorizationRecommender,
                                  RatingMatrixBuilder ratingMatrixBuilder,
-                                 CollaborativePredictor collaborativePredictor,
+                                 CollaborativeFilteringRecommender collaborativeFilteringRecommender,
                                  CategoryFallback categoryFallback) {
         this.dishRepository = dishRepository;
         this.dishMapper = dishMapper;
         this.reviewRepository = reviewRepository;
         this.orderRepository = orderRepository;
-        this.factorizationService = factorizationService;
+        this.matrixFactorizationRecommender = matrixFactorizationRecommender;
         this.ratingMatrixBuilder = ratingMatrixBuilder;
-        this.collaborativePredictor = collaborativePredictor;
+        this.collaborativeFilteringRecommender = collaborativeFilteringRecommender;
         this.categoryFallback = categoryFallback;
     }
 
@@ -76,12 +73,12 @@ public class RecommendationService {
 
         // --- CF branch ---
         final Map<Long, Double> cfRaw =
-                Optional.ofNullable(collaborativePredictor.predict(userId, ratingData)).orElseGet(Map::of);
+                Optional.ofNullable(collaborativeFilteringRecommender.predict(userId, ratingData)).orElseGet(Map::of);
 
         // --- MF branch (biased MF) ---
-        if (!factorizationService.isReady()) {
-            factorizationService.train(reviews, orders);
-            final double trainRmse = factorizationService.rmseOnReviews(reviews);
+        if (!matrixFactorizationRecommender.isReady()) {
+            matrixFactorizationRecommender.train(reviews, orders);
+            final double trainRmse = matrixFactorizationRecommender.rmseOnReviews(reviews);
             log.info("Factorization trained, trainRMSE={}", trainRmse);
         }
 
@@ -92,7 +89,7 @@ public class RecommendationService {
         // Score MF for candidates only
         final Map<Long, Double> mfScores = new HashMap<>(candidateIds.size());
         for (Long dishId : candidateIds) {
-            mfScores.put(dishId, factorizationService.predict(userId, dishId));
+            mfScores.put(dishId, matrixFactorizationRecommender.predict(userId, dishId));
         }
 
         // Blend after z-normalization to make scales comparable

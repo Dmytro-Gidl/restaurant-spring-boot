@@ -71,4 +71,3 @@ public final class ForecastEvaluator {
         return folds == 0 ? new Metrics(Double.NaN, Double.NaN) : new Metrics(mapeSum / folds, rmseSum / folds);
     }
 }
-
