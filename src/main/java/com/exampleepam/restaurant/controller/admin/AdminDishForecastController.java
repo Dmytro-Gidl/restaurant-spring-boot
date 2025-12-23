@@ -56,7 +56,7 @@ public class AdminDishForecastController extends BaseController {
         model.addAttribute(FILTER_ATTR, filter);
         model.addAttribute(TYPE_ATTR, type);
         model.addAttribute("model", modelName);
-        model.addAttribute("models", java.util.List.of("holt","arima"));
+        model.addAttribute("models", java.util.List.of("holt", "arima"));
         model.addAttribute("metrics", forecastService.getModelMetrics());
         model.addAttribute("categories", Category.values());
         return FORECAST_PAGE;
@@ -67,10 +67,5 @@ public class AdminDishForecastController extends BaseController {
     public DishForecastService.ForecastDetails details(@RequestParam("model") String model,
                                                        @RequestParam("dishId") long dishId) {
         return forecastService.getDetails(model, dishId);
-    }
-
-    @GetMapping("/about")
-    public String about() {
-        return "dish-forecast-info";
     }
 }

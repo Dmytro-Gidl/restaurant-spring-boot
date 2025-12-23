@@ -46,7 +46,6 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="d-flex align-items-center">
             <h2 class="mb-0" th:text="#{dishForecast.title}">Dish Forecast</h2>
-            <a href="/admin/dish-forecast/about" class="btn btn-sm btn-outline-light ms-3">Help</a>
         </div>
         <form class="d-flex" method="get" th:action="@{/admin/dish-forecast}">
             <select name="model" class="form-select form-select-sm me-2 bg-dark text-light border-secondary">
@@ -63,20 +62,6 @@
             <button class="btn btn-sm btn-outline-light" type="submit"><i class="bi bi-search"></i></button>
         </form>
     </div>
-
-    <details class="mb-3">
-        <summary class="text-info">How forecasts work</summary>
-        <div class="card card-body bg-dark text-light mt-2">
-            <p class="mb-2">Examples:</p>
-            <ul class="mb-1">
-                <li>Steady growth: Holt‑Winters follows the rise, ARIMA lags, auto‑ARIMA may average.</li>
-                <li>Mean‑reverting demand: ARIMA mirrors the swings, Holt‑Winters smooths, auto‑ARIMA picks the best fit.</li>
-                <li>Sparse orders: with only a few months, all models draw a flat line.</li>
-            </ul>
-            <p class="mb-0">See the <a href="/admin/dish-forecast/about" class="text-decoration-underline text-light">help page</a> for full explanations.</p>
-        </div>
-    </details>
-
     <div class="row justify-content-center mb-4" th:if="${summary != null}">
         <div class="col-md-8">
             <div class="card h-100 shadow-sm text-center">
