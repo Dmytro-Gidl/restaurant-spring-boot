@@ -21,7 +21,7 @@ import lombok.ToString;
 public class OrderCreationDto {
 
   @NotBlank(message = "{fail.blank.address}")
-  @Size(min = 4, max = 50, message = "{fail.size.address}")
+  @Size(min = 4, max = 100, message = "{fail.size.address}")
   private String address;
   @HasOrder(message = "{fail.order.absent}")
   private Map<Long, Integer> dishIdQuantityMap;
